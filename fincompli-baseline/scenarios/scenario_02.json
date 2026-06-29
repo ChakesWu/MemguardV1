@@ -1,0 +1,44 @@
+{
+  "scenario_id": "02",
+  "title": "Structuring - Multiple Transactions Below Threshold",
+  "type": "structuring",
+  "expected_risk_level": "critical",
+  "expected_outcome": "file_sar",
+  "description": "⭐ PRIMARY DEMO SCENARIO: Customer conducts 3 transactions of HKD 490K each within 3 minutes across HK, Cayman Islands, and BVI jurisdictions. Classic structuring pattern designed to evade HKD 500K reporting threshold.",
+
+  "transaction_id": "TXN-20240629-88411",
+  "customer_id": "C-00412",
+  "amount": 1470000,
+  "currency": "HKD",
+  "from_account": "HK82 0012 3456 7890",
+  "to_account": "KY1-9999-0001",
+  "to_country": "KY",
+
+  "transaction_pattern": "Customer Sunrise Global Holdings Ltd conducted 3 transactions within 3 minutes: (1) HKD 490K from HK to Cayman Offshore Services Inc (KY), (2) HKD 490K from SG to Cayman Investment Trust (KY), (3) HKD 490K from KY to BVI Holdings Corp (BVI). Each transaction deliberately structured below HKD 500K reporting threshold. Multiple jurisdictions involved. Short time window suggests coordination.",
+
+  "related_transactions": [
+    {
+      "sub_id": "TXN-88411-A",
+      "amount": 490000,
+      "from": "HK",
+      "to": "KY",
+      "beneficiary": "Cayman Offshore Services Inc"
+    },
+    {
+      "sub_id": "TXN-88411-B",
+      "amount": 490000,
+      "from": "SG",
+      "to": "KY",
+      "beneficiary": "Cayman Investment Trust"
+    },
+    {
+      "sub_id": "TXN-88411-C",
+      "amount": 490000,
+      "from": "KY",
+      "to": "VG",
+      "beneficiary": "BVI Holdings Corp"
+    }
+  ],
+
+  "test_notes": "This is the most complete demo scenario. Expected to trigger all agents, require human review, and generate a full SAR draft. Risk score should be >= 0.85."
+}

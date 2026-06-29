@@ -1,0 +1,2002 @@
+[
+  {
+    "customer_id": "C-00001",
+    "name": "Allison Hill",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK41 4657 3286 2679",
+    "account_open_date": "2021-05-27",
+    "typical_transaction_range": {
+      "min": 16087,
+      "max": 488323
+    },
+    "typical_countries": [
+      "HK",
+      "US"
+    ],
+    "monthly_transaction_count": 12,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00002",
+    "name": "Taylor Inc Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK21 4582 4811 9279",
+    "account_open_date": "2024-02-25",
+    "typical_transaction_range": {
+      "min": 14863,
+      "max": 113912
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00003",
+    "name": "Yang, Gardner and Garza Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK85 5557 1106 3615",
+    "account_open_date": "2019-06-14",
+    "typical_transaction_range": {
+      "min": 16438,
+      "max": 321571
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00004",
+    "name": "Brandon Hall",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK23 2519 7224 2584",
+    "account_open_date": "2020-09-17",
+    "typical_transaction_range": {
+      "min": 10881,
+      "max": 280331
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00005",
+    "name": "Johnson, Gonzalez and Santos Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK20 5803 6925 4150",
+    "account_open_date": "2020-03-29",
+    "typical_transaction_range": {
+      "min": 16543,
+      "max": 136466
+    },
+    "typical_countries": [
+      "HK",
+      "US"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00006",
+    "name": "Barnes, Cole and Ramirez Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK22 7227 5554 8428",
+    "account_open_date": "2021-11-16",
+    "typical_transaction_range": {
+      "min": 15415,
+      "max": 291277
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00007",
+    "name": "Blake and Sons Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK44 2169 3803 9751",
+    "account_open_date": "2016-12-20",
+    "typical_transaction_range": {
+      "min": 16946,
+      "max": 228351
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00008",
+    "name": "Henderson, Ramirez and Lewis Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG98 DBS4598 99733",
+    "account_open_date": "2017-04-23",
+    "typical_transaction_range": {
+      "min": 10313,
+      "max": 129327
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00009",
+    "name": "Garcia-James Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG18 DBS4456 84341",
+    "account_open_date": "2021-06-26",
+    "typical_transaction_range": {
+      "min": 19358,
+      "max": 476393
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00010",
+    "name": "Abbott-Munoz Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG68 DBS3340 44718",
+    "account_open_date": "2017-04-11",
+    "typical_transaction_range": {
+      "min": 7287,
+      "max": 229303
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 12,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00011",
+    "name": "Blair PLC Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG38 DBS3266 76784",
+    "account_open_date": "2020-06-05",
+    "typical_transaction_range": {
+      "min": 13085,
+      "max": 147662
+    },
+    "typical_countries": [
+      "SG",
+      "US"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00012",
+    "name": "Thomas Miller",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK64 2040 7304 7252",
+    "account_open_date": "2016-11-08",
+    "typical_transaction_range": {
+      "min": 14763,
+      "max": 345392
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00013",
+    "name": "Mark Mcclure",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK78 5371 6573 2827",
+    "account_open_date": "2016-11-03",
+    "typical_transaction_range": {
+      "min": 9808,
+      "max": 327942
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00014",
+    "name": "Corey Jones",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG32 DBS9317 23947",
+    "account_open_date": "2018-11-15",
+    "typical_transaction_range": {
+      "min": 19262,
+      "max": 427837
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00015",
+    "name": "Patricia Galloway",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK30 9837 9689 1009",
+    "account_open_date": "2020-04-17",
+    "typical_transaction_range": {
+      "min": 14813,
+      "max": 269951
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00016",
+    "name": "Sharon James",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG40 DBS1949 41571",
+    "account_open_date": "2021-01-14",
+    "typical_transaction_range": {
+      "min": 19385,
+      "max": 397458
+    },
+    "typical_countries": [
+      "SG",
+      "US"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00017",
+    "name": "Reid-Diaz Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK26 3103 8787 3705",
+    "account_open_date": "2018-07-07",
+    "typical_transaction_range": {
+      "min": 9342,
+      "max": 376653
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00018",
+    "name": "Daniel Adams",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG95 DBS7118 67422",
+    "account_open_date": "2020-01-05",
+    "typical_transaction_range": {
+      "min": 19739,
+      "max": 371358
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00019",
+    "name": "Maria Lynch",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK53 1344 4770 4608",
+    "account_open_date": "2023-10-08",
+    "typical_transaction_range": {
+      "min": 5117,
+      "max": 137220
+    },
+    "typical_countries": [
+      "HK",
+      "US"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00020",
+    "name": "Nicholas Martin",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK19 9423 4899 5562",
+    "account_open_date": "2020-10-12",
+    "typical_transaction_range": {
+      "min": 15960,
+      "max": 354496
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00021",
+    "name": "William Bowman",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG70 DBS7669 34957",
+    "account_open_date": "2021-10-05",
+    "typical_transaction_range": {
+      "min": 6545,
+      "max": 150819
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00022",
+    "name": "Robinson, Nguyen and Tate Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG16 DBS2612 17944",
+    "account_open_date": "2019-04-02",
+    "typical_transaction_range": {
+      "min": 11596,
+      "max": 481793
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00023",
+    "name": "Rodney Trujillo",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK78 8350 3296 7912",
+    "account_open_date": "2022-05-09",
+    "typical_transaction_range": {
+      "min": 8006,
+      "max": 246037
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00024",
+    "name": "Austin Gentry",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG22 DBS1828 95477",
+    "account_open_date": "2018-04-25",
+    "typical_transaction_range": {
+      "min": 13856,
+      "max": 107737
+    },
+    "typical_countries": [
+      "SG",
+      "US"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00025",
+    "name": "Michelle Lewis",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG71 DBS4502 62565",
+    "account_open_date": "2019-01-15",
+    "typical_transaction_range": {
+      "min": 19785,
+      "max": 130741
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00026",
+    "name": "Dr. Marvin Thomas Jr.",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG68 DBS5673 65444",
+    "account_open_date": "2021-07-06",
+    "typical_transaction_range": {
+      "min": 16412,
+      "max": 482995
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00027",
+    "name": "Kimberly Burgess",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG17 DBS9883 17989",
+    "account_open_date": "2022-01-17",
+    "typical_transaction_range": {
+      "min": 17254,
+      "max": 264419
+    },
+    "typical_countries": [
+      "SG",
+      "US"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00028",
+    "name": "Hurst-Ross Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK75 2312 4044 2122",
+    "account_open_date": "2023-11-07",
+    "typical_transaction_range": {
+      "min": 14749,
+      "max": 135631
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00029",
+    "name": "Zachary Hicks",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK86 1651 2343 7868",
+    "account_open_date": "2017-12-29",
+    "typical_transaction_range": {
+      "min": 15770,
+      "max": 406012
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00030",
+    "name": "Anthony Rodriguez",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG43 DBS7484 27154",
+    "account_open_date": "2021-10-23",
+    "typical_transaction_range": {
+      "min": 16004,
+      "max": 438428
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00031",
+    "name": "Moore, Becker and Carlson Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK68 2638 2200 9808",
+    "account_open_date": "2024-05-19",
+    "typical_transaction_range": {
+      "min": 8492,
+      "max": 365229
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00032",
+    "name": "James-Ferrell Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK57 5669 3584 8179",
+    "account_open_date": "2021-09-30",
+    "typical_transaction_range": {
+      "min": 18660,
+      "max": 384802
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 12,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00033",
+    "name": "Tricia Valencia",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG23 DBS3200 44664",
+    "account_open_date": "2017-01-17",
+    "typical_transaction_range": {
+      "min": 6891,
+      "max": 156117
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00034",
+    "name": "Frazier Inc Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK36 5325 9280 9004",
+    "account_open_date": "2020-08-22",
+    "typical_transaction_range": {
+      "min": 9114,
+      "max": 126633
+    },
+    "typical_countries": [
+      "HK",
+      "US"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00035",
+    "name": "Dyer, Potter and Mack Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK52 3143 5291 3647",
+    "account_open_date": "2024-06-12",
+    "typical_transaction_range": {
+      "min": 17144,
+      "max": 331649
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00036",
+    "name": "Edward Moore",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK98 3442 9938 1590",
+    "account_open_date": "2023-08-23",
+    "typical_transaction_range": {
+      "min": 18674,
+      "max": 293575
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00037",
+    "name": "Nathan Cortez",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK56 1653 6862 4441",
+    "account_open_date": "2021-01-11",
+    "typical_transaction_range": {
+      "min": 16174,
+      "max": 230825
+    },
+    "typical_countries": [
+      "HK",
+      "US"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00038",
+    "name": "Gill, Romero and Rodriguez Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK30 3900 7755 1406",
+    "account_open_date": "2021-10-31",
+    "typical_transaction_range": {
+      "min": 7938,
+      "max": 486171
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00039",
+    "name": "Sarah Romero",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG99 DBS2771 60140",
+    "account_open_date": "2022-09-13",
+    "typical_transaction_range": {
+      "min": 19289,
+      "max": 120302
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00040",
+    "name": "James Martin",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG49 DBS4728 39219",
+    "account_open_date": "2020-07-25",
+    "typical_transaction_range": {
+      "min": 5387,
+      "max": 446047
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00041",
+    "name": "Sellers, George and Burns Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG45 DBS6753 94080",
+    "account_open_date": "2023-09-16",
+    "typical_transaction_range": {
+      "min": 13346,
+      "max": 309546
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00042",
+    "name": "Jack Galloway",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG84 DBS5349 15014",
+    "account_open_date": "2022-06-26",
+    "typical_transaction_range": {
+      "min": 6776,
+      "max": 412775
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00043",
+    "name": "Allen-Allen Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG75 DBS2894 60488",
+    "account_open_date": "2017-09-08",
+    "typical_transaction_range": {
+      "min": 19737,
+      "max": 402298
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00044",
+    "name": "Angela Dennis",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG76 DBS9821 97900",
+    "account_open_date": "2024-06-20",
+    "typical_transaction_range": {
+      "min": 8228,
+      "max": 290956
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00045",
+    "name": "Spence PLC Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG25 DBS5920 76469",
+    "account_open_date": "2017-01-17",
+    "typical_transaction_range": {
+      "min": 10067,
+      "max": 449643
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00046",
+    "name": "Anderson Group Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG26 DBS4143 65108",
+    "account_open_date": "2018-04-09",
+    "typical_transaction_range": {
+      "min": 15894,
+      "max": 298781
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 12,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00047",
+    "name": "Martin, Rose and Obrien Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG10 DBS5978 47606",
+    "account_open_date": "2018-05-05",
+    "typical_transaction_range": {
+      "min": 8443,
+      "max": 325385
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00048",
+    "name": "Hickman Ltd Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG37 DBS9375 72021",
+    "account_open_date": "2016-11-28",
+    "typical_transaction_range": {
+      "min": 18004,
+      "max": 485855
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00049",
+    "name": "Harris, Collins and Carney Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG40 DBS6085 39444",
+    "account_open_date": "2023-06-10",
+    "typical_transaction_range": {
+      "min": 18214,
+      "max": 204401
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00050",
+    "name": "Jessica Holmes",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK88 2193 8461 7790",
+    "account_open_date": "2019-02-27",
+    "typical_transaction_range": {
+      "min": 19518,
+      "max": 430178
+    },
+    "typical_countries": [
+      "HK",
+      "UK"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00051",
+    "name": "Wright Inc Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG28 DBS1090 23970",
+    "account_open_date": "2021-10-01",
+    "typical_transaction_range": {
+      "min": 17753,
+      "max": 322899
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00052",
+    "name": "Smith-Spencer Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK41 2988 8478 3184",
+    "account_open_date": "2018-03-27",
+    "typical_transaction_range": {
+      "min": 18130,
+      "max": 343606
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00053",
+    "name": "Robinson, Jones and Welch Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG70 DBS8373 43972",
+    "account_open_date": "2022-09-14",
+    "typical_transaction_range": {
+      "min": 17317,
+      "max": 229624
+    },
+    "typical_countries": [
+      "SG",
+      "JP"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00054",
+    "name": "Jones Inc Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK66 2269 5681 4841",
+    "account_open_date": "2021-05-29",
+    "typical_transaction_range": {
+      "min": 9451,
+      "max": 276080
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 11,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00055",
+    "name": "Andrea Young",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK39 7275 3503 4505",
+    "account_open_date": "2022-10-18",
+    "typical_transaction_range": {
+      "min": 6052,
+      "max": 317510
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00056",
+    "name": "Washington, Ryan and Cummings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG36 DBS7883 61049",
+    "account_open_date": "2023-10-15",
+    "typical_transaction_range": {
+      "min": 19824,
+      "max": 406225
+    },
+    "typical_countries": [
+      "SG",
+      "US"
+    ],
+    "monthly_transaction_count": 12,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00057",
+    "name": "Johnston, Sanchez and Kennedy Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG55 DBS5892 61116",
+    "account_open_date": "2024-06-02",
+    "typical_transaction_range": {
+      "min": 18982,
+      "max": 319687
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 10,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00058",
+    "name": "Brandon Hopkins",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "SG",
+    "account_number": "SG72 DBS1475 60968",
+    "account_open_date": "2019-08-07",
+    "typical_transaction_range": {
+      "min": 10507,
+      "max": 450682
+    },
+    "typical_countries": [
+      "SG",
+      "AU"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Long-term retail banking customer, stable salary deposits and regular expenses"
+  },
+  {
+    "customer_id": "C-00059",
+    "name": "Henderson-Owens Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK78 1441 7455 1444",
+    "account_open_date": "2017-07-05",
+    "typical_transaction_range": {
+      "min": 6375,
+      "max": 436985
+    },
+    "typical_countries": [
+      "HK",
+      "AU"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00060",
+    "name": "Brown, Valdez and Lucas Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "low",
+    "country": "HK",
+    "account_number": "HK43 7211 6363 4467",
+    "account_open_date": "2023-12-04",
+    "typical_transaction_range": {
+      "min": 12449,
+      "max": 271361
+    },
+    "typical_countries": [
+      "HK",
+      "JP"
+    ],
+    "monthly_transaction_count": 9,
+    "notes": "Established local business, regular commercial transactions"
+  },
+  {
+    "customer_id": "C-00061",
+    "name": "Nicholas Mcbride",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG70 DBS1317 80702",
+    "account_open_date": "2026-01-04",
+    "typical_transaction_range": {
+      "min": 113653,
+      "max": 1233920
+    },
+    "typical_countries": [
+      "SG",
+      "SG"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00062",
+    "name": "Wright and Sons Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "KY",
+    "account_number": "KY1-3496-4908",
+    "account_open_date": "2025-09-05",
+    "typical_transaction_range": {
+      "min": 133088,
+      "max": 1493129
+    },
+    "typical_countries": [
+      "KY",
+      "HK"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00063",
+    "name": "West, Henderson and Ramirez Global Ltd",
+    "type": "corporate",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG87 DBS2876 31465",
+    "account_open_date": "2025-10-08",
+    "typical_transaction_range": {
+      "min": 181536,
+      "max": 726699
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 2,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00064",
+    "name": "Thomas Ramos",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK515922",
+    "account_open_date": "2025-03-09",
+    "typical_transaction_range": {
+      "min": 287436,
+      "max": 915927
+    },
+    "typical_countries": [
+      "UK",
+      "HK"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00065",
+    "name": "Garcia, Pearson and Fernandez Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "KY",
+    "account_number": "KY2-1672-6688",
+    "account_open_date": "2024-07-22",
+    "typical_transaction_range": {
+      "min": 239655,
+      "max": 1398373
+    },
+    "typical_countries": [
+      "KY",
+      "US"
+    ],
+    "monthly_transaction_count": 2,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00066",
+    "name": "Brandon Molina",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "KY",
+    "account_number": "KY2-8102-6934",
+    "account_open_date": "2024-11-12",
+    "typical_transaction_range": {
+      "min": 266614,
+      "max": 1464143
+    },
+    "typical_countries": [
+      "KY",
+      "SG"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00067",
+    "name": "Martin Group Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK912270",
+    "account_open_date": "2024-09-23",
+    "typical_transaction_range": {
+      "min": 226745,
+      "max": 1474910
+    },
+    "typical_countries": [
+      "UK",
+      "CN"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00068",
+    "name": "Dr. Steven Martin",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "HK",
+    "account_number": "HK45 8385 4995 8613",
+    "account_open_date": "2025-12-30",
+    "typical_transaction_range": {
+      "min": 249382,
+      "max": 1779958
+    },
+    "typical_countries": [
+      "HK",
+      "CN"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00069",
+    "name": "Galloway LLC Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG37 DBS6813 43862",
+    "account_open_date": "2024-11-14",
+    "typical_transaction_range": {
+      "min": 189217,
+      "max": 1086486
+    },
+    "typical_countries": [
+      "SG",
+      "UK"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00070",
+    "name": "Rachel Mitchell",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK300337",
+    "account_open_date": "2024-10-15",
+    "typical_transaction_range": {
+      "min": 122442,
+      "max": 1006160
+    },
+    "typical_countries": [
+      "UK",
+      "CN"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00071",
+    "name": "Bernard, Cowan and Peters Ventures Ltd",
+    "type": "corporate",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG21 DBS5820 39045",
+    "account_open_date": "2026-03-11",
+    "typical_transaction_range": {
+      "min": 206011,
+      "max": 1950782
+    },
+    "typical_countries": [
+      "SG",
+      "SG"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00072",
+    "name": "Brittney Phillips",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG54 DBS7971 82140",
+    "account_open_date": "2024-10-01",
+    "typical_transaction_range": {
+      "min": 186714,
+      "max": 1237800
+    },
+    "typical_countries": [
+      "SG",
+      "CN"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00073",
+    "name": "Lauren Daniels",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "HK",
+    "account_number": "HK34 6169 2958 9779",
+    "account_open_date": "2025-11-25",
+    "typical_transaction_range": {
+      "min": 299803,
+      "max": 1947377
+    },
+    "typical_countries": [
+      "HK",
+      "SG"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00074",
+    "name": "Edwards, Williams and Woods Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG77 DBS5636 23176",
+    "account_open_date": "2024-08-02",
+    "typical_transaction_range": {
+      "min": 150886,
+      "max": 1121273
+    },
+    "typical_countries": [
+      "SG",
+      "SG"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00075",
+    "name": "Moore, Yu and Miller Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "HK",
+    "account_number": "HK26 5494 1745 1893",
+    "account_open_date": "2024-09-28",
+    "typical_transaction_range": {
+      "min": 245059,
+      "max": 1112654
+    },
+    "typical_countries": [
+      "HK",
+      "SG"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00076",
+    "name": "Kurt Leonard",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "KY",
+    "account_number": "KY5-8690-8843",
+    "account_open_date": "2024-08-18",
+    "typical_transaction_range": {
+      "min": 215466,
+      "max": 1214512
+    },
+    "typical_countries": [
+      "KY",
+      "SG"
+    ],
+    "monthly_transaction_count": 2,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00077",
+    "name": "Bryan Zamora",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG61 DBS9056 19710",
+    "account_open_date": "2026-01-21",
+    "typical_transaction_range": {
+      "min": 251262,
+      "max": 1820043
+    },
+    "typical_countries": [
+      "SG",
+      "HK"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00078",
+    "name": "Riley Inc Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK224205",
+    "account_open_date": "2025-07-17",
+    "typical_transaction_range": {
+      "min": 246295,
+      "max": 1372780
+    },
+    "typical_countries": [
+      "UK",
+      "UK"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00079",
+    "name": "Miller, Sandoval and Cunningham Ventures Ltd",
+    "type": "corporate",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK411797",
+    "account_open_date": "2024-12-30",
+    "typical_transaction_range": {
+      "min": 254278,
+      "max": 1399321
+    },
+    "typical_countries": [
+      "UK",
+      "US"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00080",
+    "name": "Donovan-Harris Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK321275",
+    "account_open_date": "2024-06-26",
+    "typical_transaction_range": {
+      "min": 169375,
+      "max": 1885018
+    },
+    "typical_countries": [
+      "UK",
+      "HK"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00081",
+    "name": "Edwards, Baker and Anderson Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "BVI",
+    "account_number": "BVI-7693-8381",
+    "account_open_date": "2026-03-26",
+    "typical_transaction_range": {
+      "min": 280714,
+      "max": 1745312
+    },
+    "typical_countries": [
+      "BVI",
+      "CN"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00082",
+    "name": "Evans, Stewart and Walton Global Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "BVI",
+    "account_number": "BVI-8438-2166",
+    "account_open_date": "2025-06-12",
+    "typical_transaction_range": {
+      "min": 280193,
+      "max": 989525
+    },
+    "typical_countries": [
+      "BVI",
+      "US"
+    ],
+    "monthly_transaction_count": 8,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00083",
+    "name": "Smith PLC Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG92 DBS3441 44816",
+    "account_open_date": "2025-08-10",
+    "typical_transaction_range": {
+      "min": 137286,
+      "max": 649757
+    },
+    "typical_countries": [
+      "SG",
+      "HK"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00084",
+    "name": "Dr. Angel Lewis MD",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK402630",
+    "account_open_date": "2024-08-23",
+    "typical_transaction_range": {
+      "min": 215121,
+      "max": 760788
+    },
+    "typical_countries": [
+      "UK",
+      "CN"
+    ],
+    "monthly_transaction_count": 7,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00085",
+    "name": "Shirley Suarez",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "SG",
+    "account_number": "SG79 DBS9090 67377",
+    "account_open_date": "2024-11-01",
+    "typical_transaction_range": {
+      "min": 121087,
+      "max": 1754173
+    },
+    "typical_countries": [
+      "SG",
+      "HK"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00086",
+    "name": "Christopher Bass",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK195763",
+    "account_open_date": "2026-03-02",
+    "typical_transaction_range": {
+      "min": 160011,
+      "max": 1914106
+    },
+    "typical_countries": [
+      "UK",
+      "UK"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00087",
+    "name": "Turner, Riggs and Roman Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "HK",
+    "account_number": "HK76 8245 5557 3973",
+    "account_open_date": "2024-12-02",
+    "typical_transaction_range": {
+      "min": 253440,
+      "max": 1414117
+    },
+    "typical_countries": [
+      "HK",
+      "CN"
+    ],
+    "monthly_transaction_count": 2,
+    "notes": "Offshore holding company, cross-border transactions"
+  },
+  {
+    "customer_id": "C-00088",
+    "name": "Mary Spencer",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "medium",
+    "country": "HK",
+    "account_number": "HK51 2713 3634 6403",
+    "account_open_date": "2025-04-21",
+    "typical_transaction_range": {
+      "min": 207910,
+      "max": 1954739
+    },
+    "typical_countries": [
+      "HK",
+      "CN"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00089",
+    "name": "Ashley Humphrey",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK192337",
+    "account_open_date": "2024-12-18",
+    "typical_transaction_range": {
+      "min": 182448,
+      "max": 1029318
+    },
+    "typical_countries": [
+      "UK",
+      "US"
+    ],
+    "monthly_transaction_count": 2,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00090",
+    "name": "Steve Newton",
+    "type": "individual",
+    "kyc_status": "verified",
+    "risk_level": "medium",
+    "country": "UK",
+    "account_number": "UK584417",
+    "account_open_date": "2024-09-19",
+    "typical_transaction_range": {
+      "min": 208330,
+      "max": 613674
+    },
+    "typical_countries": [
+      "UK",
+      "SG"
+    ],
+    "monthly_transaction_count": 6,
+    "notes": "Recent account holder, building transaction history"
+  },
+  {
+    "customer_id": "C-00091",
+    "name": "Nelson PLC Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "pending",
+    "risk_level": "high",
+    "country": "MM",
+    "account_number": "MM896907",
+    "account_open_date": "2024-10-02",
+    "typical_transaction_range": {
+      "min": 227059,
+      "max": 1853785
+    },
+    "typical_countries": [
+      "MM",
+      "IR"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "High-risk jurisdiction entity, complex ownership structure"
+  },
+  {
+    "customer_id": "C-00092",
+    "name": "Grant Watts",
+    "type": "individual",
+    "kyc_status": "expired",
+    "risk_level": "high",
+    "country": "KP",
+    "account_number": "KP832168",
+    "account_open_date": "2023-07-11",
+    "typical_transaction_range": {
+      "min": 454128,
+      "max": 1509297
+    },
+    "typical_countries": [
+      "KP",
+      "CN"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  },
+  {
+    "customer_id": "C-00093",
+    "name": "Kathy King",
+    "type": "individual",
+    "kyc_status": "expired",
+    "risk_level": "high",
+    "country": "BVI",
+    "account_number": "BVI-1224-7684",
+    "account_open_date": "2024-06-12",
+    "typical_transaction_range": {
+      "min": 248868,
+      "max": 1942462
+    },
+    "typical_countries": [
+      "BVI",
+      "CN"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  },
+  {
+    "customer_id": "C-00094",
+    "name": "Amber Walters",
+    "type": "individual",
+    "kyc_status": "expired",
+    "risk_level": "high",
+    "country": "BVI",
+    "account_number": "BVI-5781-9337",
+    "account_open_date": "2023-12-26",
+    "typical_transaction_range": {
+      "min": 343353,
+      "max": 2742692
+    },
+    "typical_countries": [
+      "BVI",
+      "KP"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  },
+  {
+    "customer_id": "C-00095",
+    "name": "Amanda Cook",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "high",
+    "country": "IR",
+    "account_number": "IR502219",
+    "account_open_date": "2025-08-02",
+    "typical_transaction_range": {
+      "min": 299934,
+      "max": 4866595
+    },
+    "typical_countries": [
+      "IR",
+      "MM"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  },
+  {
+    "customer_id": "C-00096",
+    "name": "William Martin",
+    "type": "individual",
+    "kyc_status": "expired",
+    "risk_level": "high",
+    "country": "KY",
+    "account_number": "KY7-6568-9318",
+    "account_open_date": "2023-10-29",
+    "typical_transaction_range": {
+      "min": 340075,
+      "max": 4441633
+    },
+    "typical_countries": [
+      "KY",
+      "CN"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  },
+  {
+    "customer_id": "C-00097",
+    "name": "Arnold-Patterson Enterprises Ltd",
+    "type": "corporate",
+    "kyc_status": "pending",
+    "risk_level": "high",
+    "country": "MM",
+    "account_number": "MM255813",
+    "account_open_date": "2024-08-14",
+    "typical_transaction_range": {
+      "min": 434119,
+      "max": 3258970
+    },
+    "typical_countries": [
+      "MM",
+      "KP"
+    ],
+    "monthly_transaction_count": 3,
+    "notes": "High-risk jurisdiction entity, complex ownership structure"
+  },
+  {
+    "customer_id": "C-00098",
+    "name": "Rodriguez Ltd Enterprises Ltd",
+    "type": "corporate",
+    "kyc_status": "expired",
+    "risk_level": "high",
+    "country": "MM",
+    "account_number": "MM437408",
+    "account_open_date": "2024-09-18",
+    "typical_transaction_range": {
+      "min": 298908,
+      "max": 3925520
+    },
+    "typical_countries": [
+      "MM",
+      "RU"
+    ],
+    "monthly_transaction_count": 5,
+    "notes": "High-risk jurisdiction entity, complex ownership structure"
+  },
+  {
+    "customer_id": "C-00099",
+    "name": "Gardner LLC Holdings Ltd",
+    "type": "corporate",
+    "kyc_status": "verified",
+    "risk_level": "high",
+    "country": "BVI",
+    "account_number": "BVI-8749-7246",
+    "account_open_date": "2025-02-06",
+    "typical_transaction_range": {
+      "min": 402416,
+      "max": 3783712
+    },
+    "typical_countries": [
+      "BVI",
+      "RU"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "High-risk jurisdiction entity, complex ownership structure"
+  },
+  {
+    "customer_id": "C-00100",
+    "name": "Brittany Anderson",
+    "type": "individual",
+    "kyc_status": "pending",
+    "risk_level": "high",
+    "country": "BVI",
+    "account_number": "BVI-6439-2644",
+    "account_open_date": "2024-05-03",
+    "typical_transaction_range": {
+      "min": 430847,
+      "max": 1418221
+    },
+    "typical_countries": [
+      "BVI",
+      "MM"
+    ],
+    "monthly_transaction_count": 4,
+    "notes": "Politically Exposed Person (PEP), requires enhanced due diligence"
+  }
+]

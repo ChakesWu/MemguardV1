@@ -1,0 +1,20 @@
+{
+  "scenario_id": "05",
+  "title": "False Positive - Legitimate Large Transfer",
+  "type": "false_positive",
+  "expected_risk_level": "low",
+  "expected_outcome": "clear",
+  "description": "Transaction that initially appears suspicious but has valid business explanation with complete supporting documentation.",
+
+  "transaction_id": "TXN-20240629-50001",
+  "customer_id": "C-00018",
+  "amount": 2500000,
+  "currency": "HKD",
+  "from_account": "HK78 9012 3456 7890 1234",
+  "to_account": "UK12 HSBC 0000 1234 5678",
+  "to_country": "UK",
+
+  "transaction_pattern": "Publicly-listed company transferring HKD 2.5M to UK subsidiary for annual dividend distribution as per board resolution. Transaction supported by: audited financial statements, board minutes, dividend declaration, list of 15 overseas employees receiving payments. Amount appears large but is routine annual event with full documentation.",
+
+  "test_notes": "Tests the system's ability to correctly identify legitimate transactions despite high amounts. Complete documentation and clear business purpose should result in clearance despite initial flags."
+}

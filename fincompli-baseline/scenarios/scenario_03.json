@@ -1,0 +1,20 @@
+{
+  "scenario_id": "03",
+  "title": "High-Risk KYC - Expired Documentation",
+  "type": "kyc_expired",
+  "expected_risk_level": "high",
+  "expected_outcome": "enhanced_due_diligence",
+  "description": "Large transaction with expired KYC documentation. Customer from offshore jurisdiction with outdated identity verification.",
+
+  "transaction_id": "TXN-20240629-30001",
+  "customer_id": "C-00087",
+  "amount": 1200000,
+  "currency": "USD",
+  "from_account": "KY3-5678-1234",
+  "to_account": "CH89 0000 1234 5678 9012",
+  "to_country": "CH",
+
+  "transaction_pattern": "Cayman Islands-based corporate customer attempting USD 1.2M transfer to Swiss bank account. KYC documentation expired 6 months ago. Customer has not responded to KYC refresh requests. Beneficial ownership unclear.",
+
+  "test_notes": "Tests the system's handling of KYC compliance issues. Should trigger enhanced due diligence requirements and potentially block transaction pending KYC update."
+}

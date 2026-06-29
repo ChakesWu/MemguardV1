@@ -1,0 +1,20 @@
+{
+  "scenario_id": "04",
+  "title": "Geographic Anomaly - Unusual Destination",
+  "type": "geo_anomaly",
+  "expected_risk_level": "medium",
+  "expected_outcome": "enhanced_review",
+  "description": "Transaction to high-risk FATF jurisdiction that deviates from customer's typical transaction pattern.",
+
+  "transaction_id": "TXN-20240629-40001",
+  "customer_id": "C-00043",
+  "amount": 650000,
+  "currency": "HKD",
+  "from_account": "HK12 3456 7890 1234 5678",
+  "to_account": "MM-123456789",
+  "to_country": "MM",
+
+  "transaction_pattern": "First-time transaction to Myanmar from customer whose historical pattern shows only HK, SG, US, and UK destinations. Customer provides vague business purpose: 'consulting services'. No prior relationship with beneficiary documented.",
+
+  "test_notes": "Tests geographic risk assessment. Myanmar is on FATF high-risk list. System should flag the unusual destination and request additional documentation."
+}
