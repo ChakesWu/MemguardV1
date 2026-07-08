@@ -39,18 +39,8 @@ class HttpTransport(Transport):
         self.timeout = timeout
 
     async def emit(self, event) -> None:
-        """
-        Send a MemoryEvent or DecisionTrace to the server.
-
-        Runs in a daemon thread — never blocks the calling agent.
-        Never raises — observability is best-effort.
-        """
-        thread = threading.Thread(
-            target=self._emit_sync,
-            args=(event,),
-            daemon=True,
-        )
-        thread.start()
+        """Send event synchronously (no-thread for reliability during demo)."""
+        self._emit_sync(event)
 
     def _emit_sync(self, event) -> None:
         """Synchronous HTTP POST in a background thread."""
@@ -63,7 +53,7 @@ class HttpTransport(Transport):
                 url = f"{self.base_url}/v1/events"
                 body = json.dumps({"events": [payload]}).encode("utf-8")
             else:
-                url = f"{self.base_url}/v1/traces"
+                url = f"{self.base_url}/v1/trace"
                 body = json.dumps(payload).encode("utf-8")
 
             req = request.Request(
@@ -78,5 +68,5 @@ class HttpTransport(Transport):
 
             request.urlopen(req, timeout=self.timeout)
         except (error.URLError, OSError, Exception):
-            # Silent failure — observability must never break production
-            logger.debug("MemGuard HTTP transport: emit failed", exc_info=True)
+            # Observability must never break production, but log at warning
+            logger.warning("MemGuard HTTP transport: emit failed to %s (backend may be down)", url, exc_info=False)

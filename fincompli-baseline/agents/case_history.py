@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 class CaseHistoryAgent(BaseAgent):
     """Case History Agent - Learns from past SAR cases"""
 
+    def __init__(self, memory_layer=None, interceptor=None, llm_client=None):
+        super().__init__(memory_layer=memory_layer, interceptor=interceptor, llm_client=llm_client)
+
     @property
     def agent_id(self) -> str:
         return "case_history"

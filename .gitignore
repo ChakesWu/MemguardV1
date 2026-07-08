@@ -1,1 +1,35 @@
-/Documents/
+# OS files
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+myenv/
+venv/
+env/
+
+# Database files
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# Node
+node_modules/
+.next/
+
+# Environment
+.env
+.env.local

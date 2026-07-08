@@ -87,6 +87,7 @@ class DecisionTrace:
     trace_id: str = field(default_factory=lambda: str(uuid4()))
     agent_id: str = ""
     session_id: str = ""
+    namespace: str = "default"
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     # Input side: which memories were read

@@ -3,11 +3,12 @@ Interactive CLI for FinCompli Baseline
 FinCompli Baseline 交互式命令行界面
 
 Provides interactive testing of the compliance workflow with predefined scenarios.
-提供預定義場景的合規工作流程交互測試。
 
 Usage:
-    python cli/interactive.py --scenario 02
-    python cli/interactive.py --custom
+    python cli/interactive.py --scenario 02              # heuristic only
+    python cli/interactive.py --scenario 02 --memory     # with domain memory (ChromaDB)
+    python cli/interactive.py --scenario 02 --memory --llm   # with Qwen LLM
+    python cli/interactive.py --scenario 02 --memory --llm --memguard  # + MemGuard tracing
 """
 
 import sys
@@ -24,6 +25,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 from graph import create_initial_state, build_compliance_graph
+from graph.builder import run_compliance_workflow
 from memory import MemoryLayer
 
 console = Console()
@@ -101,6 +103,7 @@ def display_analysis_results(state: dict):
         fa = state["fraud_analysis"]
         console.print(f"\n[bold]Fraud Detection:[/bold]")
         console.print(f"  Fraud Score: {fa.get('fraud_score', 0):.2f}")
+        console.print(f"  LLM Used: {'✅ Qwen' if fa.get('llm_used') else '❌ Heuristic'}")
         console.print(f"  Indicators: {len(fa.get('risk_indicators', []))}")
         for ind in fa.get("risk_indicators", [])[:3]:
             console.print(f"    • {ind}")
@@ -116,6 +119,7 @@ def display_analysis_results(state: dict):
     if state.get("compliance_research"):
         cr = state["compliance_research"]
         console.print(f"\n[bold]Compliance Research:[/bold]")
+        console.print(f"  LLM Used: {'✅ Qwen' if cr.get('llm_used') else '❌ Heuristic'}")
         console.print(f"  Regulations: {len(cr.get('applicable_regulations', []))}")
         console.print(f"  Requirements: {len(cr.get('compliance_requirements', []))}")
 
@@ -123,8 +127,9 @@ def display_analysis_results(state: dict):
     if state.get("final_report"):
         fr = state["final_report"]
         console.print(f"\n[bold]Report:[/bold]")
+        console.print(f"  LLM Used: {'✅ Qwen' if fr.get('llm_used') else '❌ Template'}")
         console.print(f"  SAR Draft: {len(fr.get('sar_draft', ''))} characters")
-        console.print(f"  Format: {fr.get('report_format', 'N/A')}")
+        console.print(f"  Recommendation: {fr.get('recommendation', 'N/A')}")
 
     # Memory Traces
     console.print(f"\n[bold]Memory Traces:[/bold]")
@@ -136,38 +141,107 @@ def display_analysis_results(state: dict):
     console.print(f"\n[bold]Final Decision:[/bold] [{decision_color}]{final_decision}[/{decision_color}]")
 
 
-def run_scenario(scenario_id: str, use_memory: bool = False):
+def run_scenario(
+    scenario_id: str,
+    use_memory: bool = False,
+    use_llm: bool = False,
+    use_memguard: bool = False,
+):
     """Run a predefined scenario"""
     console.print(f"\n[bold cyan]🚀 Starting FinCompli Baseline - Scenario {scenario_id}[/bold cyan]")
+
+    # ── Mode badge ──
+    modes = []
+    if use_llm:
+        modes.append("🤖 Qwen LLM")
+    else:
+        modes.append("🔧 Heuristic")
+    if use_memory:
+        modes.append("🧠 Domain Memory")
+    if use_memguard:
+        modes.append("🔍 MemGuard")
+    console.print(f"[dim]Mode: {' | '.join(modes)}[/dim]")
 
     # Load scenario
     scenario = load_scenario(scenario_id)
     display_scenario_info(scenario)
-
-    # Display transaction
     display_transaction(scenario)
 
-    # Initialize memory layer (optional)
-    memory = None
+    # ── Initialize memory layer ──
+    memory_layer = None
     if use_memory:
         console.print("\n[yellow]⚙️  Initializing memory layer...[/yellow]")
         try:
             from config import get_data_dir
-            memory = MemoryLayer(
+            memory_layer = MemoryLayer(
                 chroma_path=get_data_dir() / "chroma",
                 sqlite_path=get_data_dir() / "sqlite" / "fincompli.db"
             )
+            stats = memory_layer.get_memory_statistics()
             console.print("[green]✅ Memory layer initialized[/green]")
+            console.print(f"[dim]   Episodic: {stats.get('episodic', {})}[/dim]")
+            console.print(f"[dim]   Semantic: {stats.get('semantic', {})}[/dim]")
         except Exception as e:
             console.print(f"[yellow]⚠️  Memory layer unavailable: {e}[/yellow]")
-            console.print("[yellow]   Continuing without memory...[/yellow]")
+            console.print("[yellow]   Continuing without domain memory...[/yellow]")
 
-    # Build graph
+    # ── Initialize LLM client ──
+    llm_client = None
+    if use_llm:
+        console.print("\n[yellow]🤖 Initializing Qwen LLM client...[/yellow]")
+        try:
+            from llm_client import LLMClient
+            llm_client = LLMClient()
+            if llm_client.health_check():
+                console.print(f"[green]✅ Qwen connected at {llm_client.base_url}[/green]")
+                console.print(f"[dim]   Model: {llm_client.model}[/dim]")
+            else:
+                console.print("[yellow]⚠️  Qwen not reachable — will use heuristic fallback[/yellow]")
+        except Exception as e:
+            console.print(f"[yellow]⚠️  LLM client init failed: {e}[/yellow]")
+
+    # ── Initialize MemGuard ──
+    interceptor = None
+    memguard_checkpointer = None
+    if use_memguard:
+        console.print("\n[yellow]🔍 Initializing MemGuard SDK...[/yellow]")
+        try:
+            from memguard.adapters.langgraph import MemGuardCheckpointer
+            from memguard.transport import HttpTransport, StdoutTransport
+            from langgraph.checkpoint.memory import MemorySaver
+
+            transport = HttpTransport("http://localhost:8000")
+            interceptor = transport.interceptor if hasattr(transport, 'interceptor') else None
+            # Actually, interceptor needs special handling — create it manually
+            from memguard.core.interceptor import MemGuardInterceptor
+            interceptor = MemGuardInterceptor(
+                agent_id="fincompli-supervisor",
+                transport=transport,
+                namespace="fincompli",
+                capture_content=False,
+            )
+            interceptor.set_session(f"scenario-{scenario_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
+
+            memguard_checkpointer = MemGuardCheckpointer(
+                inner=MemorySaver(),
+                agent_id="fincompli-supervisor",
+                namespace="fincompli",
+                transport=transport,
+            )
+            console.print("[green]✅ MemGuard SDK initialized[/green]")
+            console.print("[dim]   Transport: HTTP → http://localhost:8000[/dim]")
+        except ImportError as e:
+            console.print(f"[yellow]⚠️  MemGuard SDK not installed: {e}[/yellow]")
+            console.print("[yellow]   Run: pip install -e ../sdk[/yellow]")
+        except Exception as e:
+            console.print(f"[yellow]⚠️  MemGuard init failed: {e}[/yellow]")
+
+    # ── Build graph ──
     console.print("\n[yellow]⚙️  Building compliance graph...[/yellow]")
-    graph = build_compliance_graph()
+    graph = build_compliance_graph(memory_saver=memguard_checkpointer)
     console.print("[green]✅ Graph built[/green]")
 
-    # Create initial state
+    # ── Create initial state ──
     thread_id = f"scenario-{scenario_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     state = create_initial_state(
         transaction_id=scenario["transaction_id"],
@@ -181,13 +255,19 @@ def run_scenario(scenario_id: str, use_memory: bool = False):
         to_country=scenario.get("to_country")
     )
 
-    # Run workflow
+    # ── Run workflow ──
     console.print(f"\n[yellow]⚙️  Running compliance workflow...[/yellow]")
     console.print(f"[dim]Thread ID: {thread_id}[/dim]")
 
     try:
-        config = {"configurable": {"thread_id": thread_id}}
-        final_state = graph.invoke(state, config)
+        final_state = run_compliance_workflow(
+            graph=graph,
+            state=state,
+            thread_id=thread_id,
+            llm_client=llm_client,
+            interceptor=interceptor,
+            memory_layer=memory_layer,
+        )
 
         # Display results
         display_analysis_results(final_state)
@@ -199,6 +279,22 @@ def run_scenario(scenario_id: str, use_memory: bool = False):
                 console.print("\n" + "="*70)
                 console.print(final_state["final_report"]["sar_draft"])
                 console.print("="*70)
+
+        # ── MemGuard summary ──
+        if use_memguard:
+            console.print("\n" + "="*70)
+            console.print(Panel(
+                "[bold green]🔍 MemGuard Observability[/bold green]\n\n"
+                f"Session: {thread_id}\n"
+                f"Dashboard: http://localhost:3001\n"
+                f"Backend:   http://localhost:8000\n\n"
+                "Check the dashboard to see:\n"
+                "  • Which memories each agent read\n"
+                "  • What each agent output\n"
+                "  • Decision traces linking memory → output",
+                title="📊 Observability",
+                border_style="magenta"
+            ))
 
         console.print(f"\n[green]✅ Workflow complete![/green]")
         return final_state
@@ -255,7 +351,17 @@ def main():
     parser.add_argument(
         "--memory",
         action="store_true",
-        help="Enable memory layer (requires ChromaDB + SQLite seeded)"
+        help="Enable domain memory layer (ChromaDB + SQLite)"
+    )
+    parser.add_argument(
+        "--llm",
+        action="store_true",
+        help="Use Qwen LLM for agent reasoning (falls back to heuristic if unreachable)"
+    )
+    parser.add_argument(
+        "--memguard",
+        action="store_true",
+        help="Enable MemGuard SDK tracing (requires SDK installed + backend running)"
     )
 
     args = parser.parse_args()
@@ -263,12 +369,19 @@ def main():
     if args.list:
         list_scenarios()
     elif args.scenario:
-        run_scenario(args.scenario, use_memory=args.memory)
+        run_scenario(
+            args.scenario,
+            use_memory=args.memory,
+            use_llm=args.llm,
+            use_memguard=args.memguard,
+        )
     else:
         console.print("[yellow]Usage:[/yellow]")
         console.print("  python cli/interactive.py --list")
         console.print("  python cli/interactive.py --scenario 02")
         console.print("  python cli/interactive.py --scenario 02 --memory")
+        console.print("  python cli/interactive.py --scenario 02 --memory --llm")
+        console.print("  python cli/interactive.py --scenario 02 --memory --llm --memguard")
 
 
 if __name__ == "__main__":

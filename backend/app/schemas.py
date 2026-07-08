@@ -50,7 +50,10 @@ class SDKEvent(BaseModel):
     agent_id: str = "unknown"
     operation: str = "create"
     memory_key: str = ""
+    memory_type: str = "working"
     namespace: str = "default"
+    session_id: Optional[str] = None
+    llm_call_id: Optional[str] = None
     timestamp: Optional[str] = None
     before_value: Optional[dict] = None
     after_value: Optional[dict] = None

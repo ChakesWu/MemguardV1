@@ -68,6 +68,7 @@ class MemGuardInterceptor:
         memory_type: MemoryType = MemoryType.WORKING,
         caused_by: str | None = None,
         tags: list[str] | None = None,
+        agent_id: str | None = None,
         **context: Any,
     ) -> str:
         """
@@ -83,13 +84,14 @@ class MemGuardInterceptor:
             memory_type: Cognitive type (EPISODIC, SEMANTIC, PROCEDURAL, WORKING)
             caused_by: event_id of an upstream event (for lineage)
             tags: Developer-defined labels
+            agent_id: Override the interceptor's agent_id for this event
             **context: Framework-specific metadata
 
         Returns:
             event_id: UUID of the recorded event
         """
         event = MemoryEvent(
-            agent_id=self.agent_id,
+            agent_id=agent_id or self.agent_id,
             session_id=self._session_id or "unknown",
             operation=operation,
             memory_key=memory_key,
@@ -115,22 +117,34 @@ class MemGuardInterceptor:
         return event.event_id
 
     def _emit_async(self, event: MemoryEvent) -> None:
-        """Non-blocking emit. Observability must never break the agent."""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self.transport.emit(event))
-            else:
-                # No running loop — run synchronously in a thread
-                import threading
-                t = threading.Thread(
-                    target=lambda: asyncio.run(self.transport.emit(event)),
-                    daemon=True
+        """Emit event via transport in a background thread. Never blocks, never raises."""
+        if not self.transport:
+            return
+
+        import threading
+
+        def _send() -> None:
+            try:
+                # Call transport.emit synchronously from the thread
+                if hasattr(self.transport, '_emit_sync'):
+                    self.transport._emit_sync(event)
+                else:
+                    import asyncio
+                    try:
+                        asyncio.run(self.transport.emit(event))
+                    except RuntimeError:
+                        # Already a running event loop — create task instead
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(self.transport.emit(event))
+            except Exception:
+                logger.warning(
+                    "MemGuard: failed to emit event %s to transport",
+                    getattr(event, 'event_id', '?'),
+                    exc_info=True,
                 )
-                t.start()
-        except Exception:
-            # Silent failure — observability is best-effort
-            pass
+
+        t = threading.Thread(target=_send, daemon=True)
+        t.start()
 
     def trace_decision(
         self,
@@ -139,6 +153,7 @@ class MemGuardInterceptor:
         prompt_text: str = "",
         output_text: str = "",
         influence_score: float = 0.0,
+        agent_id: str | None = None,
         **context: Any,
     ) -> DecisionTrace:
         """
@@ -150,6 +165,7 @@ class MemGuardInterceptor:
             prompt_text: The full prompt sent to the LLM
             output_text: The LLM's response
             influence_score: 0-1 metric of how much memory shaped this decision
+            agent_id: Override the interceptor's agent_id for this trace
             **context: Additional metadata
 
         Returns:
@@ -158,8 +174,9 @@ class MemGuardInterceptor:
         import hashlib
 
         trace = DecisionTrace(
-            agent_id=self.agent_id,
+            agent_id=agent_id or self.agent_id,
             session_id=self._session_id or "unknown",
+            namespace=self.namespace,
             input_event_ids=input_event_ids,
             output_event_ids=output_event_ids,
             prompt_hash=hashlib.sha256(prompt_text.encode()).hexdigest()[:16] if prompt_text else "",

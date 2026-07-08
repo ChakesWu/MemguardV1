@@ -215,20 +215,27 @@ class MemoryGateway:
 
         for raw in events_payload:
             try:
+                # 保存 before_value 和 after_value 到 metadata
+                meta = raw.get("context", {})
+                if raw.get("before_value") is not None:
+                    meta["_before_value"] = raw["before_value"]
+                if raw.get("after_value") is not None:
+                    meta["_after_value"] = raw["after_value"]
+
                 event = MemoryEvent(
                     event_id=raw.get("event_id", str(uuid4())),
                     tenant_id=raw.get("namespace", raw.get("tenant_id", "default")),
                     agent_id=raw.get("agent_id", "unknown"),
                     memory_id=raw.get("memory_key", str(uuid4())),
-                    trace_id=raw.get("caused_by", str(uuid4())),
+                    trace_id=raw.get("session_id") or raw.get("caused_by") or str(uuid4()),
                     event_type=raw.get("operation", "unknown"),
-                    source_type=raw.get("context", {}).get("source", "sdk"),
+                    source_type=raw.get("memory_type") or raw.get("context", {}).get("source", "sdk"),
                     content=str(raw.get("after_value") or raw.get("content_hash", "")),
                     content_hash=raw.get("content_hash", ""),
                     policy_decision="allow",
                     trust_score=80.0,
                     created_at=raw.get("timestamp", datetime.now(timezone.utc).isoformat()),
-                    metadata=raw.get("context", {}),
+                    metadata=meta,
                 )
 
                 with self._lock:
@@ -332,26 +339,307 @@ class MemoryGateway:
             "latest_event_at": latest_event_at,
         }
 
+    # ── Conflict Detection ────────────────────────────────────
+
+    def detect_conflicts(self, window_seconds: float = 5.0) -> dict[str, Any]:
+        """
+        Detect concurrent writes to the same memory_key by different agents.
+
+        Only reports the FIRST conflict per (memory_key, agent_pair) to avoid
+        explosion when many events share a key within the window.
+        """
+        conflicts: list[dict] = []
+        seen_pairs: set = set()  # dedup: (key, agent_a, agent_b)
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    """SELECT event_id, agent_id, memory_id, event_type, created_at, content_hash
+                       FROM memory_events
+                       WHERE event_type IN ('update', 'create')
+                       ORDER BY memory_id, created_at ASC"""
+                ).fetchall()
+
+            groups: dict[str, list] = {}
+            for row in rows:
+                key = row["memory_id"]
+                if key not in groups:
+                    groups[key] = []
+                groups[key].append(dict(row))
+
+            for mem_key, events_list in groups.items():
+                if len(events_list) < 2:
+                    continue
+                for i in range(len(events_list)):
+                    a = events_list[i]
+                    for j in range(i + 1, len(events_list)):
+                        b = events_list[j]
+                        if a["agent_id"] == b["agent_id"]:
+                            continue
+
+                        # 去重：每个 (key, agent_a, agent_b) 组合只报一次
+                        pair_key = tuple(sorted([a["agent_id"], b["agent_id"]]))
+                        full_key = (mem_key, pair_key[0], pair_key[1])
+                        if full_key in seen_pairs:
+                            continue
+
+                        try:
+                            ta = datetime.fromisoformat(a["created_at"].replace("Z", "+00:00"))
+                            tb = datetime.fromisoformat(b["created_at"].replace("Z", "+00:00"))
+                            delta = abs((tb - ta).total_seconds())
+                        except Exception:
+                            continue
+
+                        if delta <= window_seconds:
+                            seen_pairs.add(full_key)
+                            severity = "critical" if delta < 0.5 else "high" if delta < 2.0 else "medium"
+                            conflicts.append({
+                                "memory_key": mem_key,
+                                "agent_a": a["agent_id"],
+                                "agent_b": b["agent_id"],
+                                "event_a": a["event_id"],
+                                "event_b": b["event_id"],
+                                "time_a": a["created_at"],
+                                "time_b": b["created_at"],
+                                "delta_seconds": round(delta, 3),
+                                "severity": severity,
+                                "hash_a": a["content_hash"],
+                                "hash_b": b["content_hash"],
+                                "same_content": a["content_hash"] == b["content_hash"],
+                            })
+
+        except Exception as e:
+            return {"conflicts": [], "total": 0, "error": str(e)}
+
+        severity_order = {"critical": 0, "high": 1, "medium": 2}
+        conflicts.sort(key=lambda c: severity_order.get(c["severity"], 3))
+
+        return {"conflicts": conflicts, "total": len(conflicts)}
+
     def create_decision_trace(self, trace: DecisionTrace) -> None:
         """Store a decision trace linking memories to LLM decisions."""
         self.decision_traces.append(trace)
 
+    def _persist_trace(self, trace: DecisionTrace) -> None:
+        """Write a decision trace to SQLite."""
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.execute(
+                    """INSERT OR REPLACE INTO decision_traces
+                       (trace_id, tenant_id, agent_id, session_id, timestamp,
+                        input_memory_ids_json, input_memory_events_json,
+                        user_input, llm_prompt_hash, llm_output, llm_output_hash,
+                        llm_model, output_memory_ids_json, output_memory_events_json,
+                        memory_influence_scores_json, total_influence_score, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        trace.trace_id, trace.tenant_id, trace.agent_id,
+                        trace.session_id, trace.timestamp,
+                        json.dumps(trace.input_memory_ids),
+                        json.dumps(trace.input_memory_events),
+                        trace.user_input, trace.llm_prompt_hash,
+                        trace.llm_output, trace.llm_output_hash,
+                        trace.llm_model,
+                        json.dumps(trace.output_memory_ids),
+                        json.dumps(trace.output_memory_events),
+                        json.dumps(trace.memory_influence_scores),
+                        trace.total_influence_score,
+                        json.dumps(trace.metadata),
+                    )
+                )
+                conn.commit()
+        except Exception:
+            pass
+
     def get_decision_trace(self, trace_id: str) -> dict[str, Any] | None:
-        """Get a specific decision trace by ID."""
-        for trace in self.decision_traces:
-            if trace.trace_id == trace_id:
-                return asdict(trace)
+        """Get a specific decision trace by ID (from SQLite, survives restart)."""
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                row = conn.execute(
+                    "SELECT * FROM decision_traces WHERE trace_id = ?", (trace_id,)
+                ).fetchone()
+                if row:
+                    d = dict(row)
+                    for k in ("input_memory_ids_json", "input_memory_events_json",
+                              "output_memory_ids_json", "output_memory_events_json",
+                              "memory_influence_scores_json", "metadata_json"):
+                        if d.get(k):
+                            try:
+                                d[k.replace("_json", "")] = json.loads(d[k])
+                            except Exception:
+                                pass
+                    return d
+        except Exception:
+            pass
         return None
 
     def get_decision_traces_by_agent(self, tenant_id: str, agent_id: str, limit: int = 50) -> list[dict[str, Any]]:
-        """Get all decision traces for a specific agent."""
-        traces = [
-            asdict(trace)
-            for trace in self.decision_traces
-            if trace.tenant_id == tenant_id and trace.agent_id == agent_id
-        ]
-        traces.sort(key=lambda t: t["timestamp"], reverse=True)
-        return traces[:limit]
+        """Get all decision traces for a specific agent (from SQLite, survives restart)."""
+        return self._query_traces("WHERE tenant_id = ? AND agent_id = ?", (tenant_id, agent_id), limit)
+
+    def get_decision_traces_by_tenant(self, tenant_id: str, limit: int = 100) -> list[dict[str, Any]]:
+        """Get all decision traces for a tenant across all agents (from SQLite)."""
+        return self._query_traces("WHERE tenant_id = ?", (tenant_id,), limit)
+
+    def _query_traces(self, where_clause: str, params: tuple, limit: int) -> list[dict[str, Any]]:
+        """Shared SQLite query helper for decision traces. Enriches with event details."""
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    f"SELECT * FROM decision_traces {where_clause} ORDER BY timestamp DESC LIMIT ?",
+                    (*params, limit),
+                ).fetchall()
+                results = []
+                for row in rows:
+                    d = dict(row)
+                    json_fields = {
+                        "input_memory_ids_json": "input_memory_ids",
+                        "input_memory_events_json": "input_memory_events",
+                        "output_memory_ids_json": "output_memory_ids",
+                        "output_memory_events_json": "output_memory_events",
+                        "memory_influence_scores_json": "memory_influence_scores",
+                        "metadata_json": "metadata",
+                    }
+                    for db_key, api_key in json_fields.items():
+                        if d.get(db_key):
+                            try:
+                                d[api_key] = json.loads(d.pop(db_key))
+                            except Exception:
+                                d.pop(db_key, None)
+
+                    # ── Resolve event IDs → human-readable memory details ──
+                    all_event_ids = d.get("input_memory_ids", []) + d.get("output_memory_ids", [])
+                    if all_event_ids:
+                        placeholders = ",".join("?" for _ in all_event_ids)
+                        event_rows = conn.execute(
+                            f"SELECT event_id, agent_id, memory_id, event_type FROM memory_events WHERE event_id IN ({placeholders})",
+                            all_event_ids,
+                        ).fetchall()
+                        event_map = {}
+                        for er in event_rows:
+                            event_map[er["event_id"]] = {
+                                "agent_id": er["agent_id"],
+                                "memory_key": er["memory_id"],
+                                "operation": er["event_type"],
+                            }
+                        # Enrich input side
+                        d["input_memory_details"] = [event_map.get(eid, {"memory_key": eid[:12]+"..."}) for eid in d.get("input_memory_ids", [])]
+                        # Enrich output side
+                        d["output_memory_details"] = [event_map.get(eid, {"memory_key": eid[:12]+"..."}) for eid in d.get("output_memory_ids", [])]
+
+                    results.append(d)
+                return results
+        except Exception:
+            pass
+        return []
+
+    # ── Event List & Session Queries ─────────────────────────
+
+    def get_events_list(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        operation: str | None = None,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+        tenant_id: str | None = None,
+        memory_key_pattern: str | None = None,
+    ) -> dict[str, Any]:
+        """Query events from SQLite with optional filters."""
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                query = "SELECT * FROM memory_events"
+                params: list[Any] = []
+                conditions: list[str] = []
+
+                if operation:
+                    conditions.append("event_type = ?")
+                    params.append(operation)
+                if agent_id:
+                    conditions.append("agent_id = ?")
+                    params.append(agent_id)
+                if session_id:
+                    conditions.append("trace_id = ?")
+                    params.append(session_id)
+                if tenant_id:
+                    conditions.append("tenant_id = ?")
+                    params.append(tenant_id)
+                if memory_key_pattern:
+                    conditions.append("memory_id LIKE ?")
+                    params.append(f"%{memory_key_pattern}%")
+
+                if conditions:
+                    query += " WHERE " + " AND ".join(conditions)
+
+                query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                params.extend([limit, offset])
+
+                cursor = conn.execute(query, params)
+                rows = cursor.fetchall()
+
+                events = []
+                for row in rows:
+                    meta = json.loads(row["metadata_json"] or "{}")
+                    before_val = meta.pop("_before_value", None)
+                    after_val = meta.pop("_after_value", None)
+                    events.append({
+                        "event_id": row["event_id"],
+                        "agent_id": row["agent_id"],
+                        "session_id": row["trace_id"] or "",
+                        "operation": row["event_type"],
+                        "memory_key": row["memory_id"],
+                        "namespace": row["tenant_id"],
+                        "memory_type": row["source_type"],
+                        "content_hash": row["content_hash"] or "",
+                        "timestamp": row["created_at"],
+                        "context": meta,
+                        "before_value": before_val,
+                        "after_value": after_val,
+                    })
+
+                count_query = "SELECT COUNT(*) as cnt FROM memory_events"
+                if conditions:
+                    count_query += " WHERE " + " AND ".join(conditions)
+                count_row = conn.execute(count_query, params[:-2] if conditions else []).fetchone()
+                total = count_row["cnt"] if count_row else 0
+
+                return {"events": events, "total": total}
+        except Exception as e:
+            return {"events": [], "total": 0, "error": str(e)}
+
+    def get_sessions_list(self, limit: int = 50) -> dict[str, Any]:
+        """Return distinct sessions with their event counts and latest timestamps."""
+        try:
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    """SELECT trace_id as session_id,
+                              COUNT(*) as event_count,
+                              MAX(created_at) as latest_event,
+                              GROUP_CONCAT(DISTINCT agent_id) as agents
+                       FROM memory_events
+                       WHERE trace_id != '' AND trace_id IS NOT NULL
+                       GROUP BY trace_id
+                       ORDER BY latest_event DESC
+                       LIMIT ?""",
+                    (limit,)
+                ).fetchall()
+
+                sessions = []
+                for row in rows:
+                    sessions.append({
+                        "session_id": row["session_id"],
+                        "event_count": row["event_count"],
+                        "latest_event": row["latest_event"],
+                        "agents": row["agents"].split(",") if row["agents"] else [],
+                    })
+
+                return {"sessions": sessions, "total": len(sessions)}
+        except Exception as e:
+            return {"sessions": [], "total": 0, "error": str(e)}
 
     def get_memory_influence_history(self, memory_id: str) -> dict[str, Any]:
         """Show all decisions this memory influenced."""

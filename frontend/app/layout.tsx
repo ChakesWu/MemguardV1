@@ -1,7 +1,14 @@
+import './globals.css'
+
+export const metadata = {
+  title: 'MemGuard Dashboard',
+  description: 'Memory Observability for AI Agents',
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN">
-      <body style={{ margin: 0, background: "#0b1020" }}>{children}</body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }
