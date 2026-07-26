@@ -282,17 +282,18 @@ def get_sessions(limit: int = 50):
 @app.get("/v1/db/stats")
 def db_stats():
     """Get database statistics."""
-    import sqlite3
-    from .services import DB_PATH
     try:
-        with sqlite3.connect(str(DB_PATH)) as conn:
-            event_count = conn.execute("SELECT COUNT(*) FROM memory_events").fetchone()[0]
-            trace_count = conn.execute("SELECT COUNT(*) FROM decision_traces").fetchone()[0]
-        return {
-            "db_path": str(DB_PATH),
+        with gateway.database.connect() as conn:
+            event_count = conn.execute("SELECT COUNT(*) AS total FROM memory_events").fetchone()["total"]
+            trace_count = conn.execute("SELECT COUNT(*) AS total FROM decision_traces").fetchone()["total"]
+        stats = {
+            "database_driver": gateway.database.driver,
             "total_events": event_count,
             "total_decision_traces": trace_count,
-            "persisted": True
+            "persisted": True,
         }
+        if gateway.database.driver == "sqlite":
+            stats["db_path"] = gateway.database.url.removeprefix("sqlite:///")
+        return stats
     except Exception as e:
         return {"error": str(e)}

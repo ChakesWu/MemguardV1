@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import sqlite3
 import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -12,10 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from .schemas import MemoryQueryRequest, MemoryWriteRequest, TimelineQueryRequest
-
-_DEFAULT_DB = Path(__file__).parent.parent / "memguard.db" if __file__ else Path("memguard.db")
-DB_PATH = Path(os.getenv("MEMGUARD_DB_PATH", _DEFAULT_DB))
-
+from .database import DatabaseConfig
 
 @dataclass
 class MemoryEvent:
@@ -79,6 +74,7 @@ class LocalLLMAdapter:
 
 class MemoryGateway:
     def __init__(self) -> None:
+        self.database = DatabaseConfig.from_env()
         self.adapter = LocalLLMAdapter()
         self.events: list[MemoryEvent] = []           # In-memory cache
         self.decision_traces: list[DecisionTrace] = []  # In-memory cache
@@ -88,9 +84,10 @@ class MemoryGateway:
     # ── SQLite Persistence ──────────────────────────────────
 
     def _init_db(self) -> None:
-        """Initialize SQLite database for persistent storage."""
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(str(DB_PATH)) as conn:
+        """Initialize the selected persistence database."""
+        if self.database.driver == "sqlite":
+            Path(self.database.url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
+        with self.database.connect() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_events (
                     event_id TEXT PRIMARY KEY,
@@ -151,8 +148,7 @@ class MemoryGateway:
     def _load_from_db(self) -> None:
         """Load persisted events into memory cache on startup."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
                 rows = conn.execute(
                     "SELECT * FROM memory_events ORDER BY created_at"
                 ).fetchall()
@@ -179,16 +175,11 @@ class MemoryGateway:
             pass  # DB might not exist yet
 
     def _persist_event(self, event: MemoryEvent) -> None:
-        """Write a single event to SQLite."""
+        """Write a single event to the selected persistence database."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
+            with self.database.connect() as conn:
                 conn.execute(
-                    """INSERT OR REPLACE INTO memory_events
-                       (event_id, tenant_id, agent_id, memory_id, trace_id,
-                        event_type, source_type, content, content_hash,
-                        policy_decision, trust_score, created_at,
-                        parent_event_id, embedding_json, metadata_json)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    self._event_upsert_statement(),
                     (
                         event.event_id, event.tenant_id, event.agent_id,
                         event.memory_id, event.trace_id, event.event_type,
@@ -202,6 +193,36 @@ class MemoryGateway:
                 conn.commit()
         except Exception:
             pass  # Best-effort persistence
+
+    def _event_upsert_statement(self) -> str:
+        if self.database.driver == "postgres":
+            return """INSERT INTO memory_events
+                       (event_id, tenant_id, agent_id, memory_id, trace_id,
+                        event_type, source_type, content, content_hash,
+                        policy_decision, trust_score, created_at,
+                        parent_event_id, embedding_json, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                       ON CONFLICT (event_id) DO UPDATE SET
+                         tenant_id = EXCLUDED.tenant_id,
+                         agent_id = EXCLUDED.agent_id,
+                         memory_id = EXCLUDED.memory_id,
+                         trace_id = EXCLUDED.trace_id,
+                         event_type = EXCLUDED.event_type,
+                         source_type = EXCLUDED.source_type,
+                         content = EXCLUDED.content,
+                         content_hash = EXCLUDED.content_hash,
+                         policy_decision = EXCLUDED.policy_decision,
+                         trust_score = EXCLUDED.trust_score,
+                         created_at = EXCLUDED.created_at,
+                         parent_event_id = EXCLUDED.parent_event_id,
+                         embedding_json = EXCLUDED.embedding_json,
+                         metadata_json = EXCLUDED.metadata_json"""
+        return """INSERT OR REPLACE INTO memory_events
+                       (event_id, tenant_id, agent_id, memory_id, trace_id,
+                        event_type, source_type, content, content_hash,
+                        policy_decision, trust_score, created_at,
+                        parent_event_id, embedding_json, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
     def ingest_sdk_events(self, events_payload: list[dict]) -> dict[str, Any]:
         """
@@ -372,8 +393,7 @@ class MemoryGateway:
             # Find event in SQLite (most reliable) or in-memory cache
             event_data = None
             try:
-                with sqlite3.connect(str(DB_PATH)) as conn:
-                    conn.row_factory = sqlite3.Row
+                with self.database.connect() as conn:
                     row = conn.execute(
                         "SELECT source_type, created_at FROM memory_events WHERE event_id = ?",
                         (event_id,)
@@ -446,8 +466,7 @@ class MemoryGateway:
         conflicts: list[dict] = []
         seen_pairs: set = set()  # dedup: (key, agent_a, agent_b)
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
                 rows = conn.execute(
                     """SELECT event_id, agent_id, memory_id, event_type, created_at, content_hash
                        FROM memory_events
@@ -519,17 +538,11 @@ class MemoryGateway:
         self.decision_traces.append(trace)
 
     def _persist_trace(self, trace: DecisionTrace) -> None:
-        """Write a decision trace to SQLite."""
+        """Write a decision trace to the selected persistence database."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
+            with self.database.connect() as conn:
                 conn.execute(
-                    """INSERT OR REPLACE INTO decision_traces
-                       (trace_id, tenant_id, agent_id, session_id, timestamp,
-                        input_memory_ids_json, input_memory_events_json,
-                        user_input, llm_prompt_hash, llm_output, llm_output_hash,
-                        llm_model, output_memory_ids_json, output_memory_events_json,
-                        memory_influence_scores_json, total_influence_score, metadata_json)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    self._trace_upsert_statement(),
                     (
                         trace.trace_id, trace.tenant_id, trace.agent_id,
                         trace.session_id, trace.timestamp,
@@ -549,6 +562,40 @@ class MemoryGateway:
         except Exception:
             pass
 
+    def _trace_upsert_statement(self) -> str:
+        if self.database.driver == "postgres":
+            return """INSERT INTO decision_traces
+                       (trace_id, tenant_id, agent_id, session_id, timestamp,
+                        input_memory_ids_json, input_memory_events_json,
+                        user_input, llm_prompt_hash, llm_output, llm_output_hash,
+                        llm_model, output_memory_ids_json, output_memory_events_json,
+                        memory_influence_scores_json, total_influence_score, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                       ON CONFLICT (trace_id) DO UPDATE SET
+                         tenant_id = EXCLUDED.tenant_id,
+                         agent_id = EXCLUDED.agent_id,
+                         session_id = EXCLUDED.session_id,
+                         timestamp = EXCLUDED.timestamp,
+                         input_memory_ids_json = EXCLUDED.input_memory_ids_json,
+                         input_memory_events_json = EXCLUDED.input_memory_events_json,
+                         user_input = EXCLUDED.user_input,
+                         llm_prompt_hash = EXCLUDED.llm_prompt_hash,
+                         llm_output = EXCLUDED.llm_output,
+                         llm_output_hash = EXCLUDED.llm_output_hash,
+                         llm_model = EXCLUDED.llm_model,
+                         output_memory_ids_json = EXCLUDED.output_memory_ids_json,
+                         output_memory_events_json = EXCLUDED.output_memory_events_json,
+                         memory_influence_scores_json = EXCLUDED.memory_influence_scores_json,
+                         total_influence_score = EXCLUDED.total_influence_score,
+                         metadata_json = EXCLUDED.metadata_json"""
+        return """INSERT OR REPLACE INTO decision_traces
+                       (trace_id, tenant_id, agent_id, session_id, timestamp,
+                        input_memory_ids_json, input_memory_events_json,
+                        user_input, llm_prompt_hash, llm_output, llm_output_hash,
+                        llm_model, output_memory_ids_json, output_memory_events_json,
+                        memory_influence_scores_json, total_influence_score, metadata_json)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+
     def get_decision_trace(self, trace_id: str) -> dict[str, Any] | None:
         """Get a specific decision trace by ID (from SQLite, survives restart)."""
         traces = self._query_traces("WHERE trace_id = ?", (trace_id,), 1)
@@ -565,8 +612,7 @@ class MemoryGateway:
     def _query_traces(self, where_clause: str, params: tuple, limit: int) -> list[dict[str, Any]]:
         """Shared SQLite query helper for decision traces. Enriches with event details."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
                 rows = conn.execute(
                     f"SELECT * FROM decision_traces {where_clause} ORDER BY timestamp DESC LIMIT ?",
                     (*params, limit),
@@ -662,8 +708,7 @@ class MemoryGateway:
     ) -> dict[str, Any]:
         """Query events from SQLite with optional filters."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
                 query = "SELECT * FROM memory_events"
                 params: list[Any] = []
                 conditions: list[str] = []
@@ -726,13 +771,17 @@ class MemoryGateway:
     def get_sessions_list(self, limit: int = 50) -> dict[str, Any]:
         """Return distinct sessions with their event counts and latest timestamps."""
         try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
+                agent_aggregation = (
+                    "STRING_AGG(DISTINCT agent_id, ',')"
+                    if self.database.driver == "postgres"
+                    else "GROUP_CONCAT(DISTINCT agent_id)"
+                )
                 rows = conn.execute(
-                    """SELECT trace_id as session_id,
+                    f"""SELECT trace_id as session_id,
                               COUNT(*) as event_count,
                               MAX(created_at) as latest_event,
-                              GROUP_CONCAT(DISTINCT agent_id) as agents
+                              {agent_aggregation} as agents
                        FROM memory_events
                        WHERE trace_id != '' AND trace_id IS NOT NULL
                        GROUP BY trace_id
@@ -789,8 +838,7 @@ class MemoryGateway:
             # Import reasoning extractor
             from .reasoning_extractor import ReasoningExtractor
 
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
+            with self.database.connect() as conn:
 
                 # Get decision trace
                 trace = conn.execute(

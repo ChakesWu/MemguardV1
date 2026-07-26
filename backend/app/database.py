@@ -9,6 +9,28 @@ from pathlib import Path
 from typing import Any
 
 
+class DatabaseConnection:
+    """Small compatibility layer for the SQL used by the current gateway."""
+
+    def __init__(self, raw: Any, driver: str) -> None:
+        self.raw = raw
+        self.driver = driver
+
+    def __enter__(self) -> "DatabaseConnection":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.raw.close()
+
+    def execute(self, statement: str, params: tuple | list = ()) -> Any:
+        if self.driver == "postgres":
+            statement = statement.replace("?", "%s")
+        return self.raw.execute(statement, params)
+
+    def commit(self) -> None:
+        self.raw.commit()
+
+
 @dataclass(frozen=True)
 class DatabaseConfig:
     url: str
@@ -33,9 +55,12 @@ class DatabaseConfig:
         if self.driver == "sqlite":
             connection = sqlite3.connect(self.url.removeprefix("sqlite:///"))
             connection.row_factory = sqlite3.Row
-            return connection
+            return DatabaseConnection(connection, self.driver)
 
         import psycopg
         from psycopg.rows import dict_row
 
-        return psycopg.connect(self.url, row_factory=dict_row)
+        return DatabaseConnection(
+            psycopg.connect(self.url, row_factory=dict_row),
+            self.driver,
+        )
