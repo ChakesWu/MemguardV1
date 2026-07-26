@@ -46,9 +46,13 @@ interface DecisionTrace {
   timestamp: string
   total_influence_score: number
   input_memory_ids: string[]
+  input_memory_events?: string[]
   output_memory_ids: string[]
-  input_memory_details?: { agent_id: string; memory_key: string; operation: string }[]
-  output_memory_details?: { agent_id: string; memory_key: string; operation: string }[]
+  output_memory_events?: string[]
+  input_memory_details?: EvidenceItem[]
+  output_memory_details?: EvidenceItem[]
+  evidence_items?: EvidenceItem[]
+  missing_evidence_event_ids?: string[]
   llm_output: string
   user_input: string
   memory_influence_scores?: Record<string, number>
@@ -56,13 +60,20 @@ interface DecisionTrace {
   output_summary?: string
 }
 
-const FINCOMPLI_AGENTS = [
-  'fincompli-supervisor',
-  'fraud_detection',
-  'case_history',
-  'compliance_research',
-  'report_generation',
-]
+interface EvidenceItem {
+  event_id: string
+  side?: 'input' | 'output'
+  agent_id?: string
+  memory_key: string
+  operation: string
+  memory_type?: string
+  timestamp?: string
+  content_hash?: string
+  metadata?: Record<string, any>
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TRACE_TENANT = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-org'
 
 function computeChangeCount(before: any, after: any): number {
   if (!before && !after) return 0
@@ -130,6 +141,19 @@ function memoryKeyLabel(key: string): { icon: string; label: string; colorClass:
   return { icon: '•', label: key, colorClass: 'text-gray-300' }
 }
 
+function evidenceContextLabel(detail: EvidenceItem): string {
+  const metadata = detail.metadata || {}
+  const parts: string[] = []
+
+  if (metadata.source_type) parts.push(`source ${metadata.source_type}`)
+  if (metadata.evidence_role) parts.push(`role ${metadata.evidence_role}`)
+  if (metadata.relevance) parts.push(`relevance ${metadata.relevance}`)
+  if (metadata.trust_score !== undefined) parts.push(`trust ${metadata.trust_score}`)
+  if (metadata.policy_status) parts.push(`policy ${metadata.policy_status}`)
+
+  return parts.join(' · ')
+}
+
 export default function DashboardPage() {
   const [events, setEvents] = useState<MemoryEvent[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -143,8 +167,6 @@ export default function DashboardPage() {
   const [showConflicts, setShowConflicts] = useState(false)
   const [showAudit, setShowAudit] = useState(false)
   const [conflictEventIds, setConflictEventIds] = useState<Set<string>>(new Set())
-
-  const API_BASE = 'http://localhost:8000'
 
   useEffect(() => {
     fetchData()
@@ -171,7 +193,7 @@ export default function DashboardPage() {
       // Fetch decision traces for the selected agent (or all agents for tenant)
       try {
         const traceAgent = agentFilter !== 'all' ? agentFilter : null
-        const traceNamespace = 'fincompli'
+        const traceNamespace = TRACE_TENANT
         let tracesUrl: string
         if (traceAgent) {
           tracesUrl = `${API_BASE}/v1/trace/agent/${traceNamespace}/${traceAgent}`
@@ -207,9 +229,6 @@ export default function DashboardPage() {
   const agentList = (() => {
     const seen = new Set<string>()
     events.forEach(e => { if (e.agent_id) seen.add(e.agent_id) })
-    // Merge with known fincompli agents
-    FINCOMPLI_AGENTS.forEach(a => seen.add(a))
-    seen.add('demo-chatbot')
     return Array.from(seen).sort()
   })()
 
@@ -339,10 +358,10 @@ export default function DashboardPage() {
                     <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                       <div className="text-4xl mb-2">📭</div>
                       <div>No events found</div>
-                      <div className="text-sm mt-2">Run the fincompli baseline with MemGuard:</div>
+                      <div className="text-sm mt-2">Run the generic LangGraph demo with MemGuard:</div>
                       <code className="block mt-2 text-xs bg-gray-800 px-4 py-2 rounded mx-auto max-w-lg">
-                        cd fincompli-baseline && ./run_with_memguard.sh<br/>
-                        Then open http://localhost:3001
+                        python examples/generic_trace_demo.py<br/>
+                        Then refresh this dashboard
                       </code>
                     </td>
                   </tr>
@@ -398,7 +417,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               🧠 Decision Traces
               <span className="text-xs text-gray-500 font-normal">
-                (memory IN → agent decision → memory OUT)
+                (recorded evidence → agent output → resulting memory)
               </span>
             </h2>
             <div className="space-y-3">
@@ -423,7 +442,7 @@ export default function DashboardPage() {
                           ? 'bg-blue-900 text-blue-200'
                           : 'bg-gray-700 text-gray-300'
                       }`}>
-                        influence: {(trace.total_influence_score || 0).toFixed(2)}
+                        evidence ranking: {(trace.total_influence_score || 0).toFixed(2)}
                       </span>
                     </div>
                     <span className="text-xs text-gray-500">
@@ -587,47 +606,76 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="p-6 space-y-6">
-              {/* ── Memory IN ── */}
+              {/* ── Evidence available when this output was generated ── */}
               <div>
                 <h4 className="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">
-                  📥 Memory IN <span className="text-xs text-gray-500 font-normal">(Agent 讀了這些記憶之後才做決策)</span>
+                  📥 Evidence available when this output was generated
                 </h4>
                 <div className="bg-blue-950/30 border border-blue-900 rounded-lg p-3">
-                  {(selectedTrace.input_memory_details?.length || selectedTrace.input_memory_ids?.length || 0) > 0 ? (
+                  {(selectedTrace.evidence_items?.filter(item => item.side === 'input').length || selectedTrace.input_memory_details?.length || 0) > 0 ? (
                     <ul className="space-y-2">
-                      {(selectedTrace.input_memory_details || selectedTrace.input_memory_ids.map(id => ({ memory_key: id.substring(0,12)+'...', agent_id: '?', operation: '?' }))).map((detail, i) => {
+                      {(selectedTrace.evidence_items?.filter(item => item.side === 'input') || selectedTrace.input_memory_details || []).map((detail, i) => {
                         const mk = memoryKeyLabel(detail.memory_key || '')
+                        // Get influence score for this specific memory (from input_memory_events list)
+                        const eventId = detail.event_id || selectedTrace.input_memory_ids?.[i] || selectedTrace.input_memory_events?.[i]
+                        const rawInfluenceScore = eventId ? selectedTrace.memory_influence_scores?.[eventId] : undefined
+                        const influenceScore =
+                          typeof rawInfluenceScore === 'number' ? rawInfluenceScore : Number(rawInfluenceScore)
+                        const hasInfluenceScore = Number.isFinite(influenceScore)
                         return (
-                          <li key={i} className="flex items-start gap-2 text-xs">
-                            <span className="mt-0.5">{mk.icon}</span>
-                            <div>
-                              <span className={`font-mono ${mk.colorClass}`}>{mk.label}</span>
-                              <span className="text-gray-500 ml-2">← {detail.operation}</span>
+                          <li key={i} className="flex items-start justify-between gap-2 text-xs">
+                            <div className="flex items-start gap-2">
+                              <span className="mt-0.5">{mk.icon}</span>
+                              <div>
+                                <span className={`font-mono ${mk.colorClass}`}>{mk.label}</span>
+                                <span className="text-gray-500 ml-2">← {detail.operation}</span>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {detail.memory_type || 'unknown source'} · {detail.timestamp ? new Date(detail.timestamp).toLocaleString() : 'timestamp unavailable'} · event {detail.event_id}
+                                  {detail.content_hash ? ` · hash ${detail.content_hash.substring(0, 12)}…` : ''}
+                                </div>
+                                {evidenceContextLabel(detail) && (
+                                  <div className="text-[10px] text-amber-300 mt-1">{evidenceContextLabel(detail)}</div>
+                                )}
+                              </div>
                             </div>
+                            {hasInfluenceScore && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${
+                                influenceScore >= 0.7 ? 'bg-purple-900/50 text-purple-200' :
+                                influenceScore >= 0.5 ? 'bg-blue-900/50 text-blue-200' :
+                                'bg-gray-700/50 text-gray-300'
+                              }`}>
+                                {influenceScore.toFixed(2)}
+                              </span>
+                            )}
                           </li>
                         )
                       })}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">沒有讀取任何記憶 (純 LLM 推理)</p>
+                    <p className="text-xs text-gray-500">No memories were read (pure LLM reasoning)</p>
+                  )}
+                  {(selectedTrace.missing_evidence_event_ids?.length || 0) > 0 && (
+                    <p className="text-xs text-amber-400 mt-2">
+                      Missing persisted evidence for {selectedTrace.missing_evidence_event_ids?.length} linked event(s); no details were fabricated.
+                    </p>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  這些記憶影響了 Agent 的決策
-                  {selectedTrace.total_influence_score > 0.6 ? ' — 高度依賴記憶' : selectedTrace.total_influence_score > 0.3 ? ' — 中度依賴記憶' : ''}
+                  These are recorded evidence links, not proof of model causality
+                  {selectedTrace.total_influence_score > 0.6 ? ' — higher recorded evidence ranking' : selectedTrace.total_influence_score > 0.3 ? ' — moderate recorded evidence ranking' : ''}
                 </p>
               </div>
 
-              {/* ── Agent Decision ── */}
+              {/* ── Agent Output ── */}
               <div>
                 <h4 className="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2">
-                  🤖 Agent Decision
+                  🤖 Agent Output
                   <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
                     (selectedTrace.total_influence_score || 0) >= 0.7
                       ? 'bg-purple-900 text-purple-200'
                       : 'bg-blue-900 text-blue-200'
                   }`}>
-                    Influence: {(selectedTrace.total_influence_score || 0).toFixed(2)}
+                    Evidence ranking: {(selectedTrace.total_influence_score || 0).toFixed(2)}
                   </span>
                 </h4>
                 <div className="bg-purple-950/30 border border-purple-900 rounded-lg p-3">
@@ -648,15 +696,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* ── Memory OUT ── */}
+              {/* ── Resulting memory writes ── */}
               <div>
                 <h4 className="text-sm font-bold text-green-400 mb-2 flex items-center gap-2">
-                  📤 Memory OUT <span className="text-xs text-gray-500 font-normal">(Agent 做了這個決策後寫入了什麼)</span>
+                  📤 Resulting memory writes
                 </h4>
                 <div className="bg-green-950/30 border border-green-900 rounded-lg p-3">
-                  {(selectedTrace.output_memory_details?.length || selectedTrace.output_memory_ids?.length || 0) > 0 ? (
+                  {(selectedTrace.evidence_items?.filter(item => item.side === 'output').length || selectedTrace.output_memory_details?.length || 0) > 0 ? (
                     <ul className="space-y-2">
-                      {(selectedTrace.output_memory_details || selectedTrace.output_memory_ids.map(id => ({ memory_key: id.substring(0,12)+'...', agent_id: '?', operation: 'create' }))).map((detail, i) => {
+                      {(selectedTrace.evidence_items?.filter(item => item.side === 'output') || selectedTrace.output_memory_details || []).map((detail, i) => {
                         const mk = memoryKeyLabel(detail.memory_key || '')
                         return (
                           <li key={i} className="flex items-start gap-2 text-xs">
@@ -664,13 +712,25 @@ export default function DashboardPage() {
                             <div>
                               <span className={`font-mono ${mk.colorClass}`}>{mk.label}</span>
                               <span className="text-gray-500 ml-2">→ {detail.operation || 'write'}</span>
+                              <div className="text-[10px] text-gray-500 mt-1">
+                                {detail.memory_type || 'unknown source'} · {detail.timestamp ? new Date(detail.timestamp).toLocaleString() : 'timestamp unavailable'} · event {detail.event_id}
+                                {detail.content_hash ? ` · hash ${detail.content_hash.substring(0, 12)}…` : ''}
+                              </div>
+                              {evidenceContextLabel(detail) && (
+                                <div className="text-[10px] text-amber-300 mt-1">{evidenceContextLabel(detail)}</div>
+                              )}
                             </div>
                           </li>
                         )
                       })}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">沒有寫入新記憶</p>
+                    <p className="text-xs text-gray-500">No new memories written</p>
+                  )}
+                  {(selectedTrace.missing_evidence_event_ids?.length || 0) > 0 && (
+                    <p className="text-xs text-amber-400 mt-2">
+                      Some linked writes are missing from the persisted event store.
+                    </p>
                   )}
                 </div>
               </div>

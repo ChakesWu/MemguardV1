@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 interface AuditReportData {
   report_id: string
   session_id: string
@@ -22,18 +24,17 @@ export default function AuditReport({ onClose }: { onClose: () => void }) {
   const [sessions, setSessions] = useState<string[]>([])
   const [sessionsLoaded, setSessionsLoaded] = useState(false)
 
-  // 动态获取 session 列表
+  // Dynamically fetch session list
   if (!sessionsLoaded) {
     setSessionsLoaded(true)
-    fetch('http://localhost:8000/v1/events?limit=500')
+    fetch(`${API_BASE}/v1/events?limit=500`)
       .then(r => r.json())
       .then(data => {
         const ids = new Set<string>()
         for (const e of (data.events || [])) {
-          const memKey = e.memory_key || ''
-          // 从 memory_key 提取 session: checkpoint:SESSION_ID 或 writes:SESSION_ID:xxx
-          const match = memKey.match(/^(?:checkpoint|writes):([^:]+)/)
-          if (match) ids.add(match[1])
+          if (e.session_id) {
+            ids.add(e.session_id)
+          }
         }
         setSessions([...ids].sort().reverse())
       })
@@ -43,7 +44,7 @@ export default function AuditReport({ onClose }: { onClose: () => void }) {
   const generateReport = async (sid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:8000/v1/analysis/audit/${sid}?style=${style}&format=json`)
+      const res = await fetch(`${API_BASE}/v1/analysis/audit/${sid}?style=${style}&format=json`)
       const data = await res.json()
       setReport(data)
     } catch { /* best effort */ }

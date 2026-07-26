@@ -215,7 +215,7 @@ class MemoryGateway:
 
         for raw in events_payload:
             try:
-                # 保存 before_value 和 after_value 到 metadata
+                # Save before_value and after_value to metadata
                 meta = raw.get("context", {})
                 if raw.get("before_value") is not None:
                     meta["_before_value"] = raw["before_value"]
@@ -341,6 +341,101 @@ class MemoryGateway:
 
     # ── Conflict Detection ────────────────────────────────────
 
+    def _calculate_influence_scores(self, trace: DecisionTrace) -> tuple[dict[str, float], float]:
+        """
+        Auto-calculate influence scores for each input memory event.
+
+        Returns:
+            (per_memory_scores, overall_score)
+
+        Formula:
+            influence_score = type_weight × recency_weight
+
+        Type weights:
+            semantic=1.0, episodic=0.8, procedural=0.6, working=0.4, sdk/unknown=0.5
+
+        Recency weights:
+            <60s=1.0, <5min=0.9, <1hr=0.7, <24hr=0.5, >24hr=0.3
+        """
+        from datetime import datetime, timezone
+
+        per_memory_scores: dict[str, float] = {}
+
+        # Parse decision timestamp
+        try:
+            decision_time = datetime.fromisoformat(trace.timestamp.replace("Z", "+00:00"))
+        except Exception:
+            decision_time = datetime.now(timezone.utc)
+
+        # Look up each input event and calculate its score
+        for event_id in trace.input_memory_events:
+            # Find event in SQLite (most reliable) or in-memory cache
+            event_data = None
+            try:
+                with sqlite3.connect(str(DB_PATH)) as conn:
+                    conn.row_factory = sqlite3.Row
+                    row = conn.execute(
+                        "SELECT source_type, created_at FROM memory_events WHERE event_id = ?",
+                        (event_id,)
+                    ).fetchone()
+                    if row:
+                        event_data = dict(row)
+            except Exception:
+                pass
+
+            # Fallback to in-memory cache
+            if not event_data:
+                for event in self.events:
+                    if event.event_id == event_id:
+                        event_data = {
+                            "source_type": event.source_type,
+                            "created_at": event.created_at
+                        }
+                        break
+
+            if not event_data:
+                # Event not found, skip
+                continue
+
+            # Calculate type_weight
+            memory_type = event_data.get("source_type", "sdk").lower()
+            type_weight = {
+                "semantic": 1.0,
+                "episodic": 0.8,
+                "procedural": 0.6,
+                "working": 0.4,
+            }.get(memory_type, 0.5)  # Default for 'sdk' or unknown
+
+            # Calculate recency_weight
+            try:
+                memory_time = datetime.fromisoformat(event_data["created_at"].replace("Z", "+00:00"))
+                delta_seconds = (decision_time - memory_time).total_seconds()
+
+                if delta_seconds < 60:
+                    recency_weight = 1.0
+                elif delta_seconds < 300:  # 5 minutes
+                    recency_weight = 0.9
+                elif delta_seconds < 3600:  # 1 hour
+                    recency_weight = 0.7
+                elif delta_seconds < 86400:  # 24 hours
+                    recency_weight = 0.5
+                else:
+                    recency_weight = 0.3
+            except Exception:
+                recency_weight = 0.5  # Default if timestamp parsing fails
+
+            # Combined score
+            influence_score = min(1.0, type_weight * recency_weight)
+            per_memory_scores[event_id] = influence_score
+
+        # Overall score = average of individual scores, capped at 1.0
+        if per_memory_scores:
+            overall_score = min(1.0, sum(per_memory_scores.values()) / len(per_memory_scores))
+        else:
+            overall_score = 0.0
+
+        return per_memory_scores, overall_score
+
     def detect_conflicts(self, window_seconds: float = 5.0) -> dict[str, Any]:
         """
         Detect concurrent writes to the same memory_key by different agents.
@@ -377,7 +472,7 @@ class MemoryGateway:
                         if a["agent_id"] == b["agent_id"]:
                             continue
 
-                        # 去重：每个 (key, agent_a, agent_b) 组合只报一次
+                        # Dedup: only report each (key, agent_a, agent_b) combination once
                         pair_key = tuple(sorted([a["agent_id"], b["agent_id"]]))
                         full_key = (mem_key, pair_key[0], pair_key[1])
                         if full_key in seen_pairs:
@@ -418,6 +513,9 @@ class MemoryGateway:
 
     def create_decision_trace(self, trace: DecisionTrace) -> None:
         """Store a decision trace linking memories to LLM decisions."""
+        # Auto-calculate influence scores if not provided
+        if not trace.memory_influence_scores or trace.total_influence_score == 0.0:
+            trace.memory_influence_scores, trace.total_influence_score = self._calculate_influence_scores(trace)
         self.decision_traces.append(trace)
 
     def _persist_trace(self, trace: DecisionTrace) -> None:
@@ -453,26 +551,8 @@ class MemoryGateway:
 
     def get_decision_trace(self, trace_id: str) -> dict[str, Any] | None:
         """Get a specific decision trace by ID (from SQLite, survives restart)."""
-        try:
-            with sqlite3.connect(str(DB_PATH)) as conn:
-                conn.row_factory = sqlite3.Row
-                row = conn.execute(
-                    "SELECT * FROM decision_traces WHERE trace_id = ?", (trace_id,)
-                ).fetchone()
-                if row:
-                    d = dict(row)
-                    for k in ("input_memory_ids_json", "input_memory_events_json",
-                              "output_memory_ids_json", "output_memory_events_json",
-                              "memory_influence_scores_json", "metadata_json"):
-                        if d.get(k):
-                            try:
-                                d[k.replace("_json", "")] = json.loads(d[k])
-                            except Exception:
-                                pass
-                    return d
-        except Exception:
-            pass
-        return None
+        traces = self._query_traces("WHERE trace_id = ?", (trace_id,), 1)
+        return traces[0] if traces else None
 
     def get_decision_traces_by_agent(self, tenant_id: str, agent_id: str, limit: int = 50) -> list[dict[str, Any]]:
         """Get all decision traces for a specific agent (from SQLite, survives restart)."""
@@ -510,24 +590,57 @@ class MemoryGateway:
                                 d.pop(db_key, None)
 
                     # ── Resolve event IDs → human-readable memory details ──
-                    all_event_ids = d.get("input_memory_ids", []) + d.get("output_memory_ids", [])
+                    # `*_memory_events` are persisted event IDs. The parallel
+                    # `*_memory_ids` fields are logical memory keys and cannot
+                    # safely be used to resolve evidence rows.
+                    input_event_ids = d.get("input_memory_events", d.get("input_memory_ids", []))
+                    output_event_ids = d.get("output_memory_events", d.get("output_memory_ids", []))
+                    all_event_ids = input_event_ids + output_event_ids
+                    d["input_memory_details"] = []
+                    d["output_memory_details"] = []
+                    d["evidence_items"] = []
+                    d["missing_evidence_event_ids"] = []
                     if all_event_ids:
                         placeholders = ",".join("?" for _ in all_event_ids)
                         event_rows = conn.execute(
-                            f"SELECT event_id, agent_id, memory_id, event_type FROM memory_events WHERE event_id IN ({placeholders})",
+                            f"SELECT event_id, agent_id, memory_id, event_type, source_type, created_at, content_hash, metadata_json FROM memory_events WHERE event_id IN ({placeholders})",
                             all_event_ids,
                         ).fetchall()
                         event_map = {}
                         for er in event_rows:
+                            try:
+                                metadata = json.loads(er["metadata_json"] or "{}")
+                            except Exception:
+                                metadata = {}
                             event_map[er["event_id"]] = {
+                                "event_id": er["event_id"],
                                 "agent_id": er["agent_id"],
                                 "memory_key": er["memory_id"],
                                 "operation": er["event_type"],
+                                "memory_type": er["source_type"],
+                                "timestamp": er["created_at"],
+                                "content_hash": er["content_hash"] or "",
+                                "metadata": metadata,
                             }
                         # Enrich input side
-                        d["input_memory_details"] = [event_map.get(eid, {"memory_key": eid[:12]+"..."}) for eid in d.get("input_memory_ids", [])]
+                        input_ids = input_event_ids
+                        output_ids = output_event_ids
+                        d["missing_evidence_event_ids"] = [
+                            eid for eid in all_event_ids if eid not in event_map
+                        ]
+                        input_details = [event_map[eid] for eid in input_ids if eid in event_map]
+                        d["input_memory_details"] = input_details
                         # Enrich output side
-                        d["output_memory_details"] = [event_map.get(eid, {"memory_key": eid[:12]+"..."}) for eid in d.get("output_memory_ids", [])]
+                        output_details = [event_map[eid] for eid in output_ids if eid in event_map]
+                        d["output_memory_details"] = output_details
+                        # Canonical Phase 1A evidence contract. Every item is
+                        # an event actually persisted in memory_events, with an
+                        # explicit side describing how it relates to the output.
+                        d["evidence_items"] = [
+                            {**item, "side": "input"} for item in input_details
+                        ] + [
+                            {**item, "side": "output"} for item in output_details
+                        ]
 
                     results.append(d)
                 return results
@@ -662,3 +775,189 @@ class MemoryGateway:
             "total_influences": len(influenced_decisions),
             "decisions": influenced_decisions
         }
+
+    def get_decision_trace_detail(self, trace_id: str) -> dict[str, Any]:
+        """
+        Get detailed decision trace with causal chain and influence scores.
+
+        Returns enhanced trace with:
+        - Input memory influences (sorted by score)
+        - Decision reasoning (extracted from LLM output)
+        - Output memory operations
+        """
+        try:
+            # Import reasoning extractor
+            from .reasoning_extractor import ReasoningExtractor
+
+            with sqlite3.connect(str(DB_PATH)) as conn:
+                conn.row_factory = sqlite3.Row
+
+                # Get decision trace
+                trace = conn.execute(
+                    "SELECT * FROM decision_traces WHERE trace_id = ?",
+                    (trace_id,)
+                ).fetchone()
+
+                if not trace:
+                    return {"error": "Trace not found"}
+
+                trace_dict = dict(trace)
+
+                # Parse JSON fields
+                input_event_ids = json.loads(trace_dict.get("input_memory_events_json", "[]"))
+                output_event_ids = json.loads(trace_dict.get("output_memory_events_json", "[]"))
+
+                # Get input memory events with details
+                input_influences = []
+                if input_event_ids:
+                    placeholders = ",".join("?" for _ in input_event_ids)
+                    input_events = conn.execute(
+                        f"""SELECT event_id, agent_id, memory_id, event_type, source_type,
+                                  created_at, content_hash, metadata_json
+                           FROM memory_events
+                           WHERE event_id IN ({placeholders})
+                           ORDER BY created_at ASC""",
+                        input_event_ids
+                    ).fetchall()
+
+                    # Calculate influence scores
+                    decision_time = datetime.fromisoformat(trace_dict["timestamp"].replace("Z", "+00:00"))
+
+                    for event in input_events:
+                        event_dict = dict(event)
+                        metadata = json.loads(event_dict.get("metadata_json", "{}"))
+
+                        # Get similarity score if available
+                        similarity = None
+                        similarities = metadata.get("similarities", [])
+                        if similarities:
+                            similarity = max(similarities)
+
+                        # Calculate influence (simple version)
+                        influence_score = self._calculate_single_influence(
+                            event_dict, decision_time, similarity
+                        )
+
+                        # Get content preview
+                        content_preview = ""
+                        after_val = metadata.get("_after_value")
+                        if after_val:
+                            content_str = str(after_val)
+                            content_preview = content_str[:100] + "..." if len(content_str) > 100 else content_str
+
+                        input_influences.append({
+                            "event_id": event_dict["event_id"],
+                            "memory_key": event_dict["memory_id"],
+                            "memory_type": event_dict["source_type"],
+                            "operation": event_dict["event_type"],
+                            "influence_score": influence_score,
+                            "content_preview": content_preview,
+                            "similarity_score": similarity,
+                            "timestamp": event_dict["created_at"],
+                        })
+
+                    # Sort by influence score
+                    input_influences.sort(key=lambda x: x["influence_score"], reverse=True)
+
+                # Get output memory events
+                output_influences = []
+                if output_event_ids:
+                    placeholders = ",".join("?" for _ in output_event_ids)
+                    output_events = conn.execute(
+                        f"""SELECT event_id, agent_id, memory_id, event_type, source_type,
+                                  created_at, content_hash
+                           FROM memory_events
+                           WHERE event_id IN ({placeholders})
+                           ORDER BY created_at ASC""",
+                        output_event_ids
+                    ).fetchall()
+
+                    for event in output_events:
+                        event_dict = dict(event)
+                        output_influences.append({
+                            "event_id": event_dict["event_id"],
+                            "memory_key": event_dict["memory_id"],
+                            "memory_type": event_dict["source_type"],
+                            "operation": event_dict["event_type"],
+                            "content_hash": event_dict.get("content_hash", ""),
+                            "timestamp": event_dict["created_at"],
+                        })
+
+                # Extract reasoning from LLM output
+                llm_output = trace_dict.get("llm_output", "")
+                reasoning_data = ReasoningExtractor.extract_full_reasoning(llm_output)
+
+                # Calculate total influence
+                total_input_influence = sum(
+                    inf["influence_score"] for inf in input_influences
+                )
+
+                return {
+                    "trace_id": trace_dict["trace_id"],
+                    "agent_id": trace_dict["agent_id"],
+                    "session_id": trace_dict.get("session_id", ""),
+                    "timestamp": trace_dict["timestamp"],
+
+                    # Memory IN
+                    "input_memory_influences": input_influences[:5],  # Top 5
+                    "total_input_influence": round(total_input_influence, 2),
+
+                    # Decision
+                    "decision_type": reasoning_data["decision_type"],
+                    "decision_confidence": reasoning_data["confidence"],
+                    "decision_reasoning": reasoning_data["reasoning"],
+                    "key_factors": reasoning_data.get("key_factors", []),
+                    "llm_output": llm_output,
+
+                    # Memory OUT
+                    "output_memory_influences": output_influences,
+
+                    # Metadata
+                    "user_input": trace_dict.get("user_input", ""),
+                    "metadata": json.loads(trace_dict.get("metadata_json", "{}")),
+                }
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {"error": str(e)}
+
+    def _calculate_single_influence(
+        self,
+        event: dict,
+        decision_time: datetime,
+        similarity: float = None
+    ) -> float:
+        """Calculate influence score for a single memory event"""
+        # Base score
+        base = 1.0
+
+        # Similarity boost
+        similarity_boost = similarity if similarity else 0.0
+
+        # Recency boost
+        try:
+            event_time = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+            hours_diff = (decision_time - event_time).total_seconds() / 3600
+            recency = 1.0 / (1.0 + hours_diff)
+        except Exception:
+            recency = 1.0
+
+        # Memory type weight
+        type_weights = {
+            "episodic": 1.2,
+            "semantic": 1.1,
+            "procedural": 1.0,
+            "working": 0.9,
+            "user_preferences": 0.8,
+        }
+        memory_type = event.get("source_type", "working")
+        type_weight = type_weights.get(memory_type, 1.0)
+
+        # Calculate final score
+        influence = base * (1.0 + similarity_boost) * recency * type_weight
+
+        # Normalize to [0, 1]
+        normalized = min(influence, 1.0)
+
+        return round(normalized, 2)

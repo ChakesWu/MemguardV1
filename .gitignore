@@ -10,6 +10,7 @@ build/
 *.egg
 
 # Virtual environments
+.venv/
 myenv/
 venv/
 env/
@@ -25,10 +26,12 @@ env/
 .vscode/
 .idea/
 .claude/
+.worktrees/
 
 # Node
 node_modules/
 .next/
+*.tsbuildinfo
 
 # Environment
 .env

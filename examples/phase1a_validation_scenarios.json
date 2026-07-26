@@ -1,0 +1,28 @@
+[
+  {
+    "id": "stale-memory",
+    "setup": "Record an old preference, then produce an output after a newer contradictory user message.",
+    "expected_review": "Can the trace show the stale read timestamp and identify the newer context that should have superseded it?"
+  },
+  {
+    "id": "conflicting-memory",
+    "setup": "Record two trusted memories for the same key with different values and retrieve both.",
+    "expected_review": "Does the output expose both conflicting evidence items and avoid implying that one was correct without a recorded policy?"
+  },
+  {
+    "id": "irrelevant-retrieval",
+    "setup": "Record a retrieval item unrelated to the user question and include it in the agent context.",
+    "expected_review": "Can a developer see that the item was available, distinguish it from useful evidence, and find the next debugging step?"
+  },
+  {
+    "id": "missing-retrieval",
+    "setup": "Produce an output whose prompt expects a retrieval event, but persist no retrieval event.",
+    "expected_review": "Does the trace clearly show the evidence gap instead of fabricating a retrieved item?"
+  },
+  {
+    "id": "untrusted-memory",
+    "setup": "Record a memory with a low trust score or quarantine policy and make it available to the agent.",
+    "expected_review": "Is the source, trust or policy status visible enough to explain why the memory should be treated cautiously?"
+  }
+]
+

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .agent import MemoryAwareAgent
@@ -105,8 +105,25 @@ def get_decision_trace(trace_id: str):
     """Get a specific decision trace showing which memories influenced a decision."""
     trace = gateway.get_decision_trace(trace_id)
     if not trace:
-        return {"error": "Trace not found"}, 404
+        raise HTTPException(status_code=404, detail="Trace not found")
     return trace
+
+
+@app.get("/v1/decision-traces/{trace_id}")
+def get_decision_trace_detail(trace_id: str):
+    """
+    Get detailed decision trace with causal chain and influence scores.
+
+    Returns enhanced trace showing:
+    - Input memory influences (with similarity scores)
+    - Decision reasoning (extracted from LLM output)
+    - Output memory operations
+    - Full causal chain: Memory IN → Decision → Memory OUT
+    """
+    detail = gateway.get_decision_trace_detail(trace_id)
+    if detail.get("error") == "Trace not found":
+        raise HTTPException(status_code=404, detail="Trace not found")
+    return detail
 
 
 @app.get("/v1/trace/agent/{tenant_id}/{agent_id}")
@@ -150,10 +167,10 @@ def ingest_events(payload: EventsIngestRequest):
 @app.get("/v1/analysis/conflicts")
 def get_conflicts(window_seconds: Optional[float] = 5.0):
     """
-    检测内存冲突 — 同一 memory_key 被不同 agent 在短时间内修改。
+    Detect memory conflicts — same memory_key modified by different agents within a short time window.
 
-    参数:
-    - window_seconds: 冲突检测窗口 (默认 5 秒)
+    Parameters:
+    - window_seconds: Conflict detection window (default 5 seconds)
     """
     return gateway.detect_conflicts(window_seconds=window_seconds or 5.0)
 
@@ -165,36 +182,41 @@ def generate_audit_report(
     format: str = "json",
 ):
     """
-    生成会话审计报告 — 将技术事件转换为自然语言报告。
+    Generate a session audit report — converting technical events into a natural language report.
 
-    参数:
-    - session_id: 会话 ID
-    - style: 报告风格 (compliance / debug / business)
-    - format: 输出格式 (json / markdown)
+    Parameters:
+    - session_id: Session ID
+    - style: Report style (compliance / debug / business)
+    - format: Output format (json / markdown)
     """
-    # 通过 memory_id LIKE 匹配 session_id
-    events_data = gateway.get_events_list(limit=5000, memory_key_pattern=session_id)
+    # Session IDs are persisted on the event trace_id column. Do not search
+    # memory keys: that can silently return an empty report for a real run.
+    events_data = gateway.get_events_list(limit=5000, session_id=session_id)
     events = events_data.get("events", [])
 
-    # 获取决策追踪
+    # Get decision traces
     traces = []
     try:
         # Extract agent_id from first event
         if events:
             agent_id = events[0].get("agent_id")
-            traces_data = gateway.get_traces_by_agent("default", agent_id)
-            traces = [t for t in traces_data.get("traces", []) if t.get("session_id") == session_id]
+            tenant_id = events[0].get("namespace", "default")
+            traces = [
+                trace
+                for trace in gateway.get_decision_traces_by_agent(tenant_id, agent_id, limit=5000)
+                if trace.get("session_id") == session_id
+            ]
     except Exception:
         pass
 
-    # 获取冲突
+    # Get conflicts
     conflicts_data = gateway.detect_conflicts(window_seconds=60.0)
     conflicts = [
         c for c in conflicts_data.get("conflicts", [])
         if any(e.get("event_id") in [c["event_a"], c["event_b"]] for e in events)
     ]
 
-    # 生成报告
+    # Generate report
     report = audit_generator.generate_session_report(
         session_id=session_id,
         events=events,
@@ -211,7 +233,7 @@ def generate_audit_report(
     return report
 
 
-# ── Dashboard APIs (事件列表 & Session 列表) ──────────
+# ── Dashboard APIs (Event List & Session List) ──────────
 
 @app.get("/v1/events")
 def get_events(
@@ -223,15 +245,15 @@ def get_events(
     tenant_id: Optional[str] = None,
 ):
     """
-    获取内存事件列表 (Dashboard 核心 API)
+    Get memory event list (Dashboard core API)
 
-    参数:
-    - limit: 返回数量 (默认 100, 最大 500)
-    - offset: 偏移量 (分页)
-    - operation: 按操作类型过滤 (create/read/update/delete/query)
-    - agent_id: 按 agent 过滤
-    - session_id: 按 session 过滤
-    - tenant_id: 按 namespace/tenant 过滤
+    Parameters:
+    - limit: Number of results (default 100, max 500)
+    - offset: Offset for pagination
+    - operation: Filter by operation type (create/read/update/delete/query)
+    - agent_id: Filter by agent
+    - session_id: Filter by session
+    - tenant_id: Filter by namespace/tenant
     """
     return gateway.get_events_list(
         limit=min(limit, 500),
@@ -246,13 +268,13 @@ def get_events(
 @app.get("/v1/sessions")
 def get_sessions(limit: int = 50):
     """
-    获取所有 session 列表
+    Get all session list
 
-    返回每个 session 的:
+    Returns for each session:
     - session_id
-    - event_count (事件数量)
-    - latest_event (最新事件时间)
-    - agents (参与的 agent 列表)
+    - event_count (number of events)
+    - latest_event (latest event timestamp)
+    - agents (list of participating agents)
     """
     return gateway.get_sessions_list(limit=limit)
 
