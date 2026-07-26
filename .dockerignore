@@ -1,0 +1,8 @@
+.git
+.next
+node_modules
+frontend/.next
+frontend/node_modules
+dashboard
+fincompli-baseline
+backend/memguard.db
