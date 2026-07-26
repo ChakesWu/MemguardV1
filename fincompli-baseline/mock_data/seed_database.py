@@ -1,9 +1,7 @@
 """
 Database Seed Script
-數據庫種子腳本
 
 Seeds all generated mock data into ChromaDB and SQLite databases.
-將所有生成的模擬數據導入 ChromaDB 和 SQLite 數據庫。
 """
 
 import json

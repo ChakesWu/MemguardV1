@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memguard"
+version = "0.1.0"
+description = "Memory observability and security for AI agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "MemGuard Team"}
+]
+keywords = ["ai", "agents", "memory", "observability", "langgraph", "langchain", "monitoring"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+langgraph = ["langgraph>=0.2.0"]
+openai = ["openai>=1.0.0"]
+rich = ["rich>=13.0.0"]
+all = ["langgraph>=0.2.0", "openai>=1.0.0", "rich>=13.0.0"]
+dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "black>=23.0.0", "mypy>=1.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/memguard"
+Documentation = "https://github.com/yourusername/memguard#readme"
+Repository = "https://github.com/yourusername/memguard"
+Issues = "https://github.com/yourusername/memguard/issues"
+
+[tool.setuptools]
+packages = ["memguard", "memguard.core", "memguard.transport", "memguard.adapters"]
+
+[tool.setuptools.package-data]
+memguard = ["py.typed"]

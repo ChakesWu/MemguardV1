@@ -1,15 +1,13 @@
 """
 Short-term Memory Module
-短期記憶模塊
 
 Short-term memory is managed by LangGraph's built-in state checkpointing.
 This module provides utilities for working with thread state.
 
-短期記憶由 LangGraph 內建的狀態檢查點管理。
-本模塊提供操作線程狀態的工具函數。
+Short-term memory is managed by LangGraph's built-in state checkpointing.
+This module provides utility functions for working with thread state.
 
 [Business Purpose] Maintains conversation context within current analysis session
-[業務目的] 維護當前分析會話中的對話上下文
 """
 
 from typing import Dict, Any, List, Optional
@@ -19,13 +17,12 @@ from datetime import datetime, timezone
 class ShortTermMemory:
     """
     Short-term Memory Interface
-    短期記憶接口
 
     Note: Actual storage is handled by LangGraph's State.
     This class provides convenience methods for state manipulation.
 
-    注意：實際存儲由 LangGraph 的 State 處理。
-    此類提供操作狀態的便利方法。
+    Note: Actual storage is handled by LangGraph's State.
+    This class provides convenience methods for state manipulation.
     """
 
     @staticmethod
@@ -38,7 +35,6 @@ class ShortTermMemory:
     ) -> Dict[str, Any]:
         """
         Format a memory trace record for state storage
-        格式化記憶追蹤記錄用於狀態存儲
 
         Args:
             memory_type: Type of memory accessed (episodic/semantic/procedural)
@@ -68,7 +64,6 @@ class ShortTermMemory:
     def get_conversation_summary(messages: List[Dict[str, str]]) -> str:
         """
         Generate a brief summary of conversation history
-        生成對話歷史的簡要摘要
 
         Args:
             messages: List of message dicts with 'role' and 'content'
@@ -94,7 +89,6 @@ class ShortTermMemory:
     def extract_transaction_context(state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract transaction-specific context from state
-        從狀態中提取交易特定上下文
 
         Args:
             state: Current graph state

@@ -1,6 +1,5 @@
 """
 User Preferences Memory Module
-用戶偏好記憶模塊
 
 Stores and retrieves user-specific preferences and settings.
 Uses SQLite for structured user data.

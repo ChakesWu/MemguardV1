@@ -1,15 +1,13 @@
 """
 Semantic Memory Module
-語義記憶模塊
 
 Semantic memory stores and retrieves regulatory knowledge.
 Uses ChromaDB for vector similarity search over regulation text.
 
-語義記憶存儲和檢索法規知識。
-使用 ChromaDB 對法規文本進行向量相似度搜索。
+Semantic memory stores and retrieves regulatory knowledge.
+Uses ChromaDB for vector similarity search over regulation text.
 
 [Business Purpose] Provides regulatory context for compliance decisions
-[業務目的] 為合規決策提供法規上下文
 """
 
 import logging
@@ -22,7 +20,6 @@ logger = logging.getLogger(__name__)
 class SemanticMemory:
     """
     Semantic Memory Manager
-    語義記憶管理器
 
     Stores: Regulatory text from HKMA, MAS, FinCEN, FATF
     Query: "What regulations apply to structuring transactions?"
@@ -76,7 +73,6 @@ class SemanticMemory:
     ) -> List[Dict[str, Any]]:
         """
         Query for relevant regulatory text
-        查詢相關法規文本
 
         Args:
             compliance_question: Question or scenario description
@@ -128,7 +124,6 @@ class SemanticMemory:
     def get_regulation_by_id(self, regulation_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a specific regulation by ID
-        通過 ID 檢索特定法規
 
         Args:
             regulation_id: Regulation identifier (e.g., "HKMA-AML-2023-§35")
@@ -158,7 +153,6 @@ class SemanticMemory:
     def search_by_authority(self, authority: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Get all regulations from a specific authority
-        獲取特定權威機構的所有法規
 
         Args:
             authority: Authority name (e.g., "HKMA", "MAS", "FinCEN", "FATF")
@@ -195,7 +189,6 @@ class SemanticMemory:
     def get_statistics(self) -> Dict[str, Any]:
         """
         Get semantic memory statistics
-        獲取語義記憶統計信息
 
         Returns:
             Statistics dict

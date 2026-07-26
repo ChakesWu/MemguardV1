@@ -292,7 +292,7 @@ def run_automated_demo():
         "conversation_count": 0
     }
 
-    # 决策追踪: 为每个 turn 创建 DecisionTrace
+    # Decision tracing: create DecisionTrace for each turn
     from memguard.core.event import DecisionTrace
     import requests
 
@@ -300,20 +300,20 @@ def run_automated_demo():
         print(f"[Turn {turn}]")
         print(f"You: {user_input}")
 
-        # --- 决策前: 记录 memory READ events ---
-        # 获取当前 state 作为 "input memories"
+        # --- Before decision: record memory READ events ---
+        # Get current state as input memories
         read_memory_ids = [f"state:{k}" for k in state.keys()]
 
         # Add message
         state["messages"].append(HumanMessage(content=user_input))
 
-        # --- Agent 决策 (模拟 LLM 调用) ---
+        # --- Agent decision (simulate LLM call) ---
         result = agent.invoke(state, config)
         old_state = state.copy()
         state = result
 
-        # --- 决策后: 记录 memory WRITE events ---
-        # 检测哪些 state 发生了变化
+        # --- After decision: record memory WRITE events ---
+        # Detect which state values changed
         write_memory_ids = []
         for key in state.keys():
             if key in old_state and old_state[key] != state[key]:
@@ -321,7 +321,7 @@ def run_automated_demo():
             elif key not in old_state:
                 write_memory_ids.append(f"state:{key}")
 
-        # --- 创建 DecisionTrace ---
+        # --- Create DecisionTrace ---
         import hashlib
         last_msg = result["messages"][-1]
         trace = DecisionTrace(
@@ -335,7 +335,7 @@ def run_automated_demo():
             memory_influence_score=min(1.0, len(read_memory_ids) * 0.2),
         )
 
-        # 发送决策追踪到 Backend
+        # Send decision trace to Backend
         try:
             from dataclasses import asdict
             resp = requests.post(

@@ -1,9 +1,7 @@
 """
 Graph Module
-圖模塊
 
 LangGraph workflow configuration and state management.
-LangGraph 工作流程配置和狀態管理。
 """
 
 from .state import ComplianceState, create_initial_state, add_messages

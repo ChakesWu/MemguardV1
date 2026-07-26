@@ -1,6 +1,5 @@
 """
 Interactive CLI for FinCompli Baseline
-FinCompli Baseline 交互式命令行界面
 
 Provides interactive testing of the compliance workflow with predefined scenarios.
 

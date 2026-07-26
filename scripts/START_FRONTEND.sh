@@ -1,48 +1,52 @@
 #!/bin/bash
-# Frontend Dashboard 快速启动脚本
+# Frontend Dashboard Quick Start Script
 
 echo "======================================================================"
-echo "  MemGuard Frontend Dashboard - 启动"
+echo "  MemGuard Frontend Dashboard - Startup"
 echo "======================================================================"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../frontend"
 
-# 检查 node_modules 是否存在
+# Load nvm for non-interactive shells
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# Check if node_modules exists
 if [ ! -d "node_modules" ]; then
-    echo "📦 首次运行，安装依赖..."
+    echo "📦 First run, installing dependencies..."
     echo ""
     npm install
     if [ $? -ne 0 ]; then
         echo ""
-        echo "❌ 依赖安装失败"
+        echo "❌ Dependency installation failed"
         echo ""
-        echo "请尝试："
+        echo "Please try:"
         echo "  cd frontend"
         echo "  rm -rf node_modules package-lock.json"
         echo "  npm install"
         exit 1
     fi
     echo ""
-    echo "✅ 依赖安装完成"
+    echo "✅ Dependency installation complete"
     echo ""
 fi
 
-# 检查 Backend 是否运行
-echo "🔍 检查 Backend 状态..."
+# Checking Backend status...
+echo "🔍 Checking Backend status..."
 if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    echo "✅ Backend 运行中 (http://localhost:8000)"
+    echo "✅ Backend is running (http://localhost:8000)"
 else
-    echo "⚠️  Backend 未运行"
+    echo "⚠️  Backend is not running"
     echo ""
-    echo "请先启动 Backend:"
+    echo "Please start Backend first:"
     echo "  ./scripts/START_BACKEND.sh"
     echo ""
-    echo "或手动启动:"
+    echo "Or start manually:"
     echo "  cd backend && python3 -m uvicorn app.main:app --port 8000 --reload"
     echo ""
-    read -p "是否继续启动 Frontend? (y/N): " -n 1 -r
+    read -p "Continue starting Frontend? (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
@@ -50,12 +54,12 @@ else
 fi
 
 echo ""
-echo "🚀 启动 Frontend Dashboard..."
+echo "🚀 Starting Frontend Dashboard..."
 echo ""
 echo "  URL: http://localhost:3001"
 echo "  API: http://localhost:8000"
 echo ""
-echo "按 Ctrl+C 停止"
+echo "Press Ctrl+C to stop"
 echo ""
 echo "======================================================================"
 echo ""

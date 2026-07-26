@@ -1,90 +1,90 @@
-# MemGuard - 执行工具清单
+# MemGuard - Execution Tools Checklist
 
-**创建时间**: 2026-07-01  
-**状态**: 已准备就绪，可以执行
-
----
-
-## 📋 已创建的执行工具
-
-### 1. 快速启动脚本
-
-| 脚本 | 用途 | 命令 |
-|------|------|------|
-| `START_BACKEND.sh` | 启动 Backend | `./START_BACKEND.sh` |
-| `RUN_DEMO.sh` | 运行 Demo Agent | `./RUN_DEMO.sh` |
-| `test_all.sh` | 完整测试套件 | `./test_all.sh` |
-| `verify_installation.sh` | 验证安装 | `./verify_installation.sh` |
-
-### 2. Python 测试脚本
-
-| 脚本 | 用途 | 命令 |
-|------|------|------|
-| `test_sdk_backend_integration.py` | SDK→Backend 集成测试 | `python3 test_sdk_backend_integration.py` |
-| `examples/demo_agent.py` | Demo Agent（3种模式） | `python3 examples/demo_agent.py --mode auto` |
+**Created Time**: 2026-07-01  
+**Status**: Ready to Execute
 
 ---
 
-## 🚀 执行步骤（按顺序）
+## 📋 Created Execution Tools
 
-### Step 1: 启动 Backend ⭐
+### 1. Quick Start Scripts
+
+| Script | Purpose | Command |
+|------|------|------|
+| `START_BACKEND.sh` | Start Backend | `./START_BACKEND.sh` |
+| `RUN_DEMO.sh` | Run Demo Agent | `./RUN_DEMO.sh` |
+| `test_all.sh` | Full Test Suite | `./test_all.sh` |
+| `verify_installation.sh` | Verify Installation | `./verify_installation.sh` |
+
+### 2. Python Test Scripts
+
+| Script | Purpose | Command |
+|------|------|------|
+| `test_sdk_backend_integration.py` | SDK→Backend Integration Test | `python3 test_sdk_backend_integration.py` |
+| `examples/demo_agent.py` | Demo Agent (3 modes) | `python3 examples/demo_agent.py --mode auto` |
+
+---
+
+## 🚀 Execution Steps (In Order)
+
+### Step 1: Start Backend ⭐
 
 ```bash
-# 方式1: 使用脚本
+# Method 1: Use script
 ./START_BACKEND.sh
 
-# 方式2: 手动启动
+# Method 2: Start manually
 cd backend
 python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**验证 Backend 启动成功**:
+**Verify Backend Startup Success**:
 ```bash
 curl http://localhost:8000/health
-# 期望输出: {"status":"ok", ...}
+# Expected Output: {"status":"ok", ...}
 ```
 
 ---
 
-### Step 2: 运行测试套件 ✅
+### Step 2: Run Test Suite ✅
 
 ```bash
 ./test_all.sh
 ```
 
-**这个脚本会测试**:
-- ✅ Python 环境
-- ✅ SDK 安装
-- ✅ Backend 可访问性
-- ✅ 数据库存在
+**This script will test**:
+- ✅ Python environment
+- ✅ SDK installation
+- ✅ Backend accessibility
+- ✅ Database exists
 - ✅ API endpoints
-- ✅ SDK 导入
+- ✅ SDK imports
 
-**期望结果**: `All tests passed! ✅`
+**Expected Result**: `All tests passed! ✅`
 
 ---
 
-### Step 3: 运行 Demo Agent 🤖
+### Step 3: Run Demo Agent 🤖
 
 ```bash
 ./RUN_DEMO.sh
 ```
 
-**或者手动运行**:
+**Or Run Manually**:
 ```bash
 cd examples
 
-# 模式1: 自动演示（推荐）
+# Mode 1: Automated demo (recommended)
 python3 demo_agent.py --mode auto
 
-# 模式2: 交互式对话
+# Mode 2: Interactive conversation
 python3 demo_agent.py --mode interactive
 
-# 模式3: 对比模式（with/without MemGuard）
+# Mode 3: Comparison mode (with/without MemGuard)
 python3 demo_agent.py --mode compare
 ```
 
-**期望输出**:
+**Expected Output**:
 ```
 ======================================================================
   MemGuard Demo Agent - Automated Mode
@@ -111,13 +111,13 @@ Agent: Nice to meet you, Alice! I'll remember that.
 
 ---
 
-### Step 4: 验证事件捕获 🔍
+### Step 4: Verify Event Capture 🔍
 
 ```bash
-# 查看数据库统计
+# View database stats
 curl http://localhost:8000/v1/db/stats | python3 -m json.tool
 
-# 期望输出:
+# Expected output:
 {
   "db_path": "backend/memguard.db",
   "total_events": 15,
@@ -126,26 +126,26 @@ curl http://localhost:8000/v1/db/stats | python3 -m json.tool
 }
 ```
 
-**查看数据库内容**:
+**View Database Contents**:
 ```bash
 sqlite3 backend/memguard.db "SELECT event_id, operation, agent_id, memory_key FROM memory_events LIMIT 5;"
 ```
 
 ---
 
-### Step 5: 测试 SDK 集成 🔌
+### Step 5: Test SDK Integration 🔌
 
 ```bash
 python3 test_sdk_backend_integration.py
 ```
 
-**这个脚本会**:
-1. ✅ 创建 MemGuard interceptor
-2. ✅ 发送测试事件到 Backend
-3. ✅ 验证事件存储
-4. ✅ 查询统计数据
+**This script will**:
+1. ✅ Create MemGuard interceptor
+2. ✅ Send test events to Backend
+3. ✅ Verify event storage
+4. ✅ Query statistics
 
-**期望输出**:
+**Expected Output**:
 ```
 ======================================================================
 TEST: SDK → Backend Integration
@@ -172,90 +172,90 @@ TEST: SDK → Backend Integration
 
 ---
 
-## 📊 验证清单
+## 📊 Verification Checklist
 
-执行完上述步骤后，确认以下项目：
+After completing the above steps, confirm the following:
 
-- [ ] **Backend 运行中**: `curl http://localhost:8000/health` 返回 OK
-- [ ] **Demo 运行成功**: 看到完整对话输出
-- [ ] **事件已捕获**: `total_events > 0`
-- [ ] **数据库可查询**: SQLite 命令返回数据
-- [ ] **SDK 集成测试通过**: 看到 "TEST PASSED"
+- [ ] **Backend running**: `curl http://localhost:8000/health` returns OK
+- [ ] **Demo ran successfully**: See full conversation output
+- [ ] **Events captured**: `total_events > 0`
+- [ ] **Database queryable**: SQLite command returns data
+- [ ] **SDK integration test passed**: See "TEST PASSED"
 
-**如果全部通过 → Stage 1 基础功能验证完成！** ✅
+**If all pass → Stage 1 basic functionality verification complete!** ✅
 
 ---
 
-## 🛠️ 故障排除
+## 🛠️ Troubleshooting
 
-### 问题1: Backend 启动失败
+### Issue 1: Backend fails to start
 
 ```bash
-# 检查端口占用
+# Check port usage
 lsof -i :8000
 
-# 如果被占用，杀死进程
+# If occupied, kill the process
 kill -9 $(lsof -t -i:8000)
 
-# 重新启动
+# Restart
 ./START_BACKEND.sh
 ```
 
-### 问题2: Demo Agent 报错 "ModuleNotFoundError: No module named 'langgraph'"
+### Issue 2: Demo Agent reports "ModuleNotFoundError: No module named 'langgraph'"
 
 ```bash
-# 安装 LangGraph
+# Install LangGraph
 pip3 install langgraph langchain-core
 
-# 重新运行
+# Rerun
 ./RUN_DEMO.sh
 ```
 
-### 问题3: SDK 导入失败
+### Issue 3: SDK import fails
 
 ```bash
-# 重新安装 SDK
+# Reinstall SDK
 cd sdk
 pip3 install -e . --force-reinstall
 cd ..
 
-# 验证安装
+# Verify installation
 python3 -c "from memguard.core.event import MemoryEvent; print('✅ OK')"
 ```
 
-### 问题4: 数据库无事件
+### Issue 4: No events in database
 
 ```bash
-# 检查 Backend 日志
+# Check Backend logs
 tail -20 backend.log
 
-# 查看数据库
+# View database
 sqlite3 backend/memguard.db "SELECT COUNT(*) FROM memory_events;"
 
-# 重新运行 Demo
+# Rerun Demo
 ./RUN_DEMO.sh
 ```
 
-### 问题5: curl 命令失败
+### Issue 5: curl command fails
 
 ```bash
-# 检查 Backend 是否运行
+# Check if Backend is running
 ps aux | grep uvicorn
 
-# 检查端口监听
+# Check port listening
 netstat -an | grep 8000
 
-# 重启 Backend
+# Restart Backend
 ./START_BACKEND.sh
 ```
 
 ---
 
-## 🎯 下一步行动
+## 🎯 Next Steps
 
-当所有测试通过后，你可以：
+Once all tests pass, you can:
 
-### 1. 开发 Frontend Dashboard（本周重点）⭐
+### 1. Develop Frontend Dashboard (This Week's Focus) ⭐
 
 ```bash
 cd frontend
@@ -263,84 +263,84 @@ npm install
 npm run dev
 ```
 
-创建以下页面：
-- `app/timeline/[sessionId]/page.tsx` - Timeline 页面
-- `components/EventDetailModal.tsx` - 事件详情 Modal
-- `components/SessionSelector.tsx` - Session 选择器
+Create the following pages:
+- `app/timeline/[sessionId]/page.tsx` - Timeline page
+- `components/EventDetailModal.tsx` - Event detail Modal
+- `components/SessionSelector.tsx` - Session selector
 
-### 2. 完善 Backend API
+### 2. Improve Backend API
 
-检查并实现：
-- `GET /v1/sessions` - 返回所有 session 列表
-- `GET /v1/sessions/{session_id}/timeline` - 返回 session 的 timeline
-- 添加分页和过滤支持
+Check and implement:
+- `GET /v1/sessions` - Return all session list
+- `GET /v1/sessions/{session_id}/timeline` - Return session timeline
+- Add pagination and filtering support
 
-### 3. 编写文档
+### 3. Write Documentation
 
-创建：
-- `docs/api-reference.md` - API 文档
-- `docs/integrations/langgraph.md` - LangGraph 集成指南
-- 录制演示视频（5-10分钟）
+Create:
+- `docs/api-reference.md` - API documentation
+- `docs/integrations/langgraph.md` - LangGraph integration guide
+- Record demo video (5-10 minutes)
 
-### 4. 准备发布
+### 4. Prepare for Release
 
-- 打包 SDK: `cd sdk && python3 setup.py sdist bdist_wheel`
-- 创建 Docker 镜像
-- 编写 CHANGELOG.md
-- 准备 beta 测试计划
+- Package SDK: `cd sdk && python3 setup.py sdist bdist_wheel`
+- Create Docker image
+- Write CHANGELOG.md
+- Prepare beta test plan
 
 ---
 
-## 📚 文档索引
+## 📚 Document Index
 
-| 文档 | 内容 |
+| Document | Content |
 |------|------|
-| `START_HERE.md` | 从这里开始 |
-| `QUICKSTART.md` | 5分钟快速教程 |
-| `MEMGUARD_STANDALONE_PLAN.md` | 完整开发计划 |
-| `TASK_EXECUTION_COMPLETE.md` | 任务完成总结 |
-| `README.md` | 项目概述 |
+| `START_HERE.md` | Start here |
+| `QUICKSTART.md` | 5-minute quick tutorial |
+| `MEMGUARD_STANDALONE_PLAN.md` | Complete development plan |
+| `TASK_EXECUTION_COMPLETE.md` | Task completion summary |
+| `README.md` | Project overview |
 
 ---
 
-## ✅ 成功标志
+## ✅ Success Indicators
 
-**当你完成以下所有项，Stage 1 核心就完成了**:
+**When you complete all of the following, Stage 1 core is done**:
 
-1. ✅ Backend 稳定运行
-2. ✅ Demo agent 成功演示
-3. ✅ 事件成功捕获
-4. ✅ API 可以查询数据
-5. ✅ SDK 集成只需 3 行代码
-6. ✅ 所有测试通过
+1. ✅ Backend running stably
+2. ✅ Demo agent successfully demonstrated
+3. ✅ Events successfully captured
+4. ✅ API can query data
+5. ✅ SDK integration only requires 3 lines of code
+6. ✅ All tests pass
 
-**然后就可以**:
-- 🎨 构建 Frontend 可视化
-- 📚 编写详细文档
-- 🚀 发布 beta 版本
-- 📢 邀请外部测试者
+**Then you can**:
+- 🎨 Build Frontend visualization
+- 📚 Write detailed documentation
+- 🚀 Release beta version
+- 📢 Invite external testers
 
 ---
 
-## 🎉 立即开始
+## 🎉 Get Started Now
 
-**运行这个命令开始验证**:
+**Run this command to begin verification**:
 
 ```bash
-# 终端1: 启动 Backend
+# Terminal 1: Start Backend
 ./START_BACKEND.sh
 
-# 终端2: 运行测试
+# Terminal 2: Run tests
 ./test_all.sh
 
-# 终端3: 运行 Demo
+# Terminal 3: Run Demo
 ./RUN_DEMO.sh
 ```
 
-**祝你开发顺利！** 🚀
+**Happy developing!** 🚀
 
 ---
 
-**最后更新**: 2026-07-01  
-**状态**: ✅ 工具就绪，可以执行  
-**下一个里程碑**: Frontend Dashboard
+**Last Updated**: 2026-07-01  
+**Status**: ✅ Tools ready to execute  
+**Next Milestone**: Frontend Dashboard

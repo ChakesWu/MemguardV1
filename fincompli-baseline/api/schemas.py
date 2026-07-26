@@ -1,9 +1,7 @@
 """
 API Schemas - Pydantic models for request/response validation
-API 模式 - 用於請求/響應驗證的 Pydantic 模型
 
 [Business Purpose] Standardizes API contract for compliance workflow
-[業務目的] 標準化合規工作流程的 API 合約
 """
 
 from typing import Optional, Dict, Any, List

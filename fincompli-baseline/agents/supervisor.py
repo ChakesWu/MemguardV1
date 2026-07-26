@@ -1,9 +1,8 @@
 """
 Supervisor Agent - Coordinates all compliance sub-agents
 
-[Business Purpose] Master coordinator deciding which agents run, 
+[Business Purpose] Master coordinator deciding which agents run,
 aggregating results, and determining workflow routing
-[業務目的] 主管協調員，決定哪些 Agent 運行、匯總結果、確定工作流程路由
 """
 
 import logging
@@ -27,10 +26,8 @@ class SupervisorAgent(BaseAgent):
     def route_initial(self, state: Dict[str, Any]) -> List[str]:
         """
         Initial routing decision: which agents to run
-        初始路由決策：運行哪些 Agent
 
         For all transactions, fraud_detection and case_history run in parallel.
-        對所有交易，fraud_detection 和 case_history 並行運行。
 
         Returns:
             List of agent names to execute
@@ -50,7 +47,6 @@ class SupervisorAgent(BaseAgent):
     def aggregate_results(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Aggregate results from parallel agents and decide next steps
-        匯總並行 Agent 的結果並決定後續步驟
 
         After fraud_detection and case_history complete, the supervisor:
         1. Reviews combined findings
@@ -123,7 +119,6 @@ class SupervisorAgent(BaseAgent):
     def decide_after_compliance(self, state: Dict[str, Any]) -> str:
         """
         Decide next step after compliance research
-        合規研究後的下一步決策
 
         Returns:
             Next node name: "report_generation" or "final_submission"
@@ -138,7 +133,6 @@ class SupervisorAgent(BaseAgent):
     def decide_after_report(self, state: Dict[str, Any]) -> str:
         """
         Decide next step after report generation
-        報告生成後的下一步決策
 
         Returns:
             Next node name
@@ -151,7 +145,6 @@ class SupervisorAgent(BaseAgent):
     def _compute_case_history_modifier(self, state: Dict[str, Any]) -> float:
         """
         Compute risk modifier from case history analysis
-        從案例歷史分析計算風險修正值
 
         - Highly similar historical cases with negative outcomes → increase risk
         - No similar cases → neutral
@@ -182,7 +175,6 @@ class SupervisorAgent(BaseAgent):
     def _classify_risk_level(self, score: float) -> str:
         """
         Classify risk score into level
-        將風險分數分類為等級
 
         Args:
             score: Aggregated risk score (0.0-1.0)
@@ -202,10 +194,8 @@ class SupervisorAgent(BaseAgent):
     def human_review_decision(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process human review decision (placeholder for interrupt logic)
-        處理人工審核決定
 
         In a real LangGraph workflow, this would use interrupt().
-        在真實 LangGraph 工作流中，這將使用 interrupt()。
 
         Args:
             state: Current state with final_report

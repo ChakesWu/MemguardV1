@@ -1,17 +1,85 @@
-# MemGuard v1 — Memory Observability for AI Agents
+# MemGuard
+**Memory Observability & Security for AI Agents**
 
-**🔍 Trace which memories make your agent output each decision.**
-
-MemGuard is a **universal memory intelligence layer** that sits alongside any AI agent framework and provides full traceability into memory operations.
+> See exactly what your agent remembers, why it made each decision, and whether its memory has been tampered with.
 
 ---
 
-## 🎯 Quick Links
+## ⚡ Quick Start
 
-- **🚀 START HERE**: Read [`Documents/START_HERE.md`](./Documents/START_HERE.md) first!
-- **📖 Quick Start**: 5-minute tutorial in [`Documents/QUICKSTART.md`](./Documents/QUICKSTART.md)
-- **📋 Development Plan**: Full roadmap in [`Documents/plans/MEMGUARD_STANDALONE_PLAN.md`](./Documents/plans/MEMGUARD_STANDALONE_PLAN.md)
-- **🔧 Execution Tools**: See [`Documents/EXECUTION_TOOLS.md`](./Documents/EXECUTION_TOOLS.md)
+### 5-minute demo (terminal only)
+
+```bash
+pip install -e sdk/
+pip install openai rich
+
+# Using OpenAI (default)
+export OPENAI_API_KEY=sk-xxx
+python demo_simple.py
+
+# Or use Anthropic Claude
+export MEMGUARD_LLM_PROVIDER=anthropic
+export ANTHROPIC_API_KEY=sk-ant-xxx
+python demo_simple.py
+
+# Or use local Ollama (free, no API key needed)
+export MEMGUARD_LLM_PROVIDER=ollama
+export MEMGUARD_LLM_MODEL=qwen2.5:7b
+python demo_simple.py
+
+# Or use any OpenAI-compatible API
+export MEMGUARD_LLM_PROVIDER=openai_compatible
+export MEMGUARD_LLM_MODEL=your-model
+export MEMGUARD_LLM_API_KEY=your-key
+export MEMGUARD_LLM_BASE_URL=https://your-api.com/v1
+python demo_simple.py
+```
+
+**Supported LLM Providers**: OpenAI · Anthropic · Ollama · Together AI · Groq · DeepSeek · vLLM · Any OpenAI-compatible API
+
+Full configuration options: [`.env.example`](./.env.example)
+
+**Output**: Colored memory events in your terminal showing CREATE, READ, UPDATE operations and conflict detection in real-time.
+
+### With dashboard
+
+```bash
+./scripts/START_ALL.sh
+export OPENAI_API_KEY=sk-xxx
+python demo_with_dashboard.py
+# Open http://localhost:3001
+```
+
+**Dashboard shows**:
+- Memory timeline with all events
+- Decision traces (memory IN → agent decision → memory OUT)
+- Conflict detection
+- Audit reports
+
+### Integrate with your own LangGraph agent
+
+```python
+from memguard import MemGuardInterceptor
+from memguard.adapters.langgraph import MemGuardCheckpointer
+from memguard.transport.stdout import StdoutTransport
+
+# Wrap your existing checkpointer
+mg = MemGuardInterceptor(
+    agent_id="my-agent",
+    transport=StdoutTransport()  # or HttpTransport("http://localhost:8000")
+)
+
+checkpointer = MemGuardCheckpointer(
+    inner=MemorySaver(),  # Your existing checkpointer
+    interceptor=mg
+)
+
+# Use it in your graph
+graph = your_workflow.compile(checkpointer=checkpointer)
+
+# That's it. Run your agent normally.
+# MemGuard tracks all memory operations automatically.
+```
 
 ---
 
@@ -37,7 +105,16 @@ Tier 4: Memory Governance         (For CISO/Board)
 
 ---
 
-## ⚡ 5-Minute Quick Start
+## 📚 Documentation
+
+- **🚀 START HERE**: Read [`Documents/START_HERE.md`](./Documents/START_HERE.md) first!
+- **📖 Quick Start**: 5-minute tutorial in [`Documents/QUICKSTART.md`](./Documents/QUICKSTART.md)
+- **📋 Development Plan**: Full roadmap in [`Documents/plans/MEMGUARD_STANDALONE_PLAN.md`](./Documents/plans/MEMGUARD_STANDALONE_PLAN.md)
+- **🔧 Execution Tools**: See [`Documents/EXECUTION_TOOLS.md`](./Documents/EXECUTION_TOOLS.md)
+
+---
+
+## 🎯 Original Quick Start (Legacy)
 
 ### Step 1: Install SDK
 
@@ -114,53 +191,53 @@ graph = workflow.compile(checkpointer=checkpointer)
 
 ```
 MemguardV1/
-├── README.md                     ← 项目主文档
+├── README.md                     ← Main project documentation
 │
 ├── sdk/memguard/                 ← SDK (pip installable)
-│   ├── core/                     - 事件模型、拦截器
-│   ├── adapters/                 - LangGraph, Mem0, AutoGen 适配器
-│   └── transport/                - HTTP, File, Stdout 传输层
+│   ├── core/                     - Event models, interceptor
+│   ├── adapters/                 - LangGraph, Mem0, AutoGen adapters
+│   └── transport/                - HTTP, File, Stdout transport layer
 │
-├── backend/                      ← Backend 控制平面
+├── backend/                      ← Backend control plane
 │   └── app/
-│       ├── main.py               - FastAPI 应用
-│       ├── services.py           - 事件存储 & 查询
-│       └── schemas.py            - 数据模型
+│       ├── main.py               - FastAPI application
+│       ├── services.py           - Event storage & query
+│       └── schemas.py            - Data models
 │
 ├── frontend/                     ← Dashboard (Next.js)
 │   ├── app/
-│   │   └── timeline/             - 内存时间线视图
-│   └── components/               - React 组件
+│   │   └── timeline/             - Memory timeline view
+│   └── components/               - React components
 │
 ├── examples/                     ← Demo agents
-│   └── demo_agent.py             - 独立 demo（不依赖 FinCompli）
+│   └── demo_agent.py             - Standalone demo (no FinCompli dependency)
 │
-├── tests/                        ← 测试文件
+├── tests/                        ← Test files
 │   ├── test_sdk_backend_integration.py
 │   └── test_memory_tracing.py
 │
-├── scripts/                      ← 可执行脚本
-│   ├── START_BACKEND.sh          - 启动 Backend
-│   ├── RUN_DEMO.sh               - 运行 Demo
-│   ├── test_all.sh               - 完整测试
-│   └── verify_installation.sh    - 验证安装
+├── scripts/                      ← Executable scripts
+│   ├── START_BACKEND.sh          - Start Backend
+│   ├── RUN_DEMO.sh               - Run Demo
+│   ├── test_all.sh               - Full test suite
+│   └── verify_installation.sh    - Verify installation
 │
-├── fincompli-baseline/           ← 🔒 独立企业 agent demo（勿修改）
+├── fincompli-baseline/           ← 🔒 Standalone enterprise agent demo (do not modify)
 │
-└── Documents/                    ← 📚 所有文档
-    ├── START_HERE.md             - 🔥 快速入口
-    ├── QUICKSTART.md             - 5分钟教程
-    ├── EXECUTION_TOOLS.md        - 执行工具清单
-    ├── plans/                    - 📋 计划书
-    │   ├── MEMGUARD_STANDALONE_PLAN.md  - 核心开发计划
-    │   ├── DEVELOPMENT_PLAN.md          - 长期规划
-    │   ├── STAGE1_TASKS.md              - Stage1 任务清单
+└── Documents/                    ← 📚 All documentation
+    ├── START_HERE.md             - 🔥 Quick start guide
+    ├── QUICKSTART.md             - 5-minute tutorial
+    ├── EXECUTION_TOOLS.md        - Execution tools inventory
+    ├── plans/                    - 📋 Plans
+    │   ├── MEMGUARD_STANDALONE_PLAN.md  - Core development plan
+    │   ├── DEVELOPMENT_PLAN.md          - Long-term roadmap
+    │   ├── STAGE1_TASKS.md              - Stage1 task list
     │   └── ...
-    ├── reference/                - 📖 参考文档
-    │   ├── 02_memorylens_product_document.md - 产品需求
-    │   ├── MemGuard_Technical_Design.md     - 技术设计
-    │   └── API_EXAMPLES.md                  - API 示例
-    └── fincompli/                - 🏦 FinCompli 相关
+    ├── reference/                - 📖 Reference documents
+    │   ├── 02_memorylens_product_document.md - Product requirements
+    │   ├── MemGuard_Technical_Design.md     - Technical design
+    │   └── API_EXAMPLES.md                  - API examples
+    └── fincompli/                - 🏦 FinCompli related
         └── ...
 ```
 

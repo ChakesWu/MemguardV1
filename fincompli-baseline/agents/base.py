@@ -1,12 +1,9 @@
 """
 Base Agent Class
-基礎 Agent 類
 
 Provides common functionality for all compliance agents.
-為所有合規 Agent 提供通用功能。
 
 [Business Purpose] Standardizes agent interface and memory access patterns
-[業務目的] 標準化 Agent 接口和記憶訪問模式
 
 [OBSERVABILITY] When an interceptor (MemGuardInterceptor) is provided,
 every memory access is emitted as a MemGuard MemoryEvent so the dashboard
@@ -53,7 +50,6 @@ _MEMORY_TYPE_MAP = {
 class BaseAgent(ABC):
     """
     Base class for all compliance agents
-    所有合規 Agent 的基類
 
     All agents must implement:
     - analyze() method that processes state and returns updated state
@@ -78,7 +74,6 @@ class BaseAgent(ABC):
     def agent_id(self) -> str:
         """
         Unique identifier for this agent
-        此 Agent 的唯一標識符
 
         Returns:
             Agent ID string
@@ -89,7 +84,6 @@ class BaseAgent(ABC):
     def analyze(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Main analysis method - must be implemented by subclasses
-        主要分析方法 - 必須由子類實現
 
         Args:
             state: Current ComplianceState
@@ -275,7 +269,6 @@ class BaseAgent(ABC):
     ) -> None:
         """
         Add a message to conversation history
-        添加消息到對話歷史
 
         Args:
             state: Current state to update
@@ -296,7 +289,6 @@ class BaseAgent(ABC):
     ) -> float:
         """
         Calculate risk score contribution from this agent
-        計算此 Agent 的風險分數貢獻
 
         Args:
             indicators: List of risk indicators identified

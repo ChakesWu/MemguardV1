@@ -1,11 +1,9 @@
 """
 SAR Cases Data Generator
-SAR 案件數據生成器
 
 Generates 30 realistic historical SAR (Suspicious Activity Report) cases.
-生成 30 條真實的歷史可疑活動報告案件。
 
-Case Distribution / 案件分佈:
+Case Distribution:
 - Structuring (10): Breaking large amounts into smaller transactions
 - Money Laundering (8): Complex layering and integration schemes
 - Fraud (7): Identity theft, invoice fraud, etc.
@@ -13,7 +11,6 @@ Case Distribution / 案件分佈:
 - Other (2): Unusual patterns not fitting other categories
 
 [Business Purpose] Provides episodic memory for case history retrieval
-[業務目的] 為案例歷史檢索提供情節記憶
 """
 
 import json
@@ -31,7 +28,6 @@ random.seed(43)
 class SARCaseGenerator:
     """
     SAR Case Data Generator
-    SAR 案件數據生成器
     """
 
     def __init__(self):
@@ -41,7 +37,6 @@ class SARCaseGenerator:
     def generate_structuring_case(self) -> Dict:
         """
         Generate structuring case (breaking large amounts into smaller transactions)
-        生成結構化分拆案件（將大額拆分為小額交易）
         """
         customer_id = f"C-{random.randint(1, 100):05d}"
         year = random.choice([2023, 2024])
@@ -87,7 +82,6 @@ class SARCaseGenerator:
     def generate_money_laundering_case(self) -> Dict:
         """
         Generate money laundering case
-        生成洗錢案件
         """
         customer_id = f"C-{random.randint(1, 100):05d}"
         year = random.choice([2022, 2023, 2024])
@@ -137,7 +131,6 @@ class SARCaseGenerator:
     def generate_fraud_case(self) -> Dict:
         """
         Generate fraud case
-        生成詐欺案件
         """
         customer_id = f"C-{random.randint(1, 100):05d}"
         year = random.choice([2023, 2024])
@@ -187,7 +180,6 @@ class SARCaseGenerator:
     def generate_terrorist_financing_case(self) -> Dict:
         """
         Generate terrorist financing case
-        生成恐怖融資案件
         """
         customer_id = f"C-{random.randint(1, 100):05d}"
         year = random.choice([2023, 2024])
@@ -234,7 +226,6 @@ class SARCaseGenerator:
     def generate_other_case(self) -> Dict:
         """
         Generate other suspicious activity case
-        生成其他可疑活動案件
         """
         customer_id = f"C-{random.randint(1, 100):05d}"
         year = random.choice([2023, 2024])
@@ -274,7 +265,6 @@ class SARCaseGenerator:
     def generate_all_cases(self) -> List[Dict]:
         """
         Generate all SAR cases according to distribution
-        按分佈生成所有 SAR 案件
         """
         print("Generating 10 structuring cases...")
         for _ in range(10):
@@ -320,7 +310,7 @@ class SARCaseGenerator:
 def main():
     """Main execution function"""
     print("=" * 70)
-    print("  SAR Cases Data Generator / SAR 案件數據生成器")
+    print("  SAR Cases Data Generator")
     print("=" * 70)
 
     generator = SARCaseGenerator()
@@ -332,7 +322,7 @@ def main():
 
     # Print summary
     print("\n" + "=" * 70)
-    print("  Summary / 摘要")
+    print("  Summary")
     print("=" * 70)
     print(f"  Total Cases: {len(cases)}")
     print(f"  Structuring: {sum(1 for c in cases if c['case_type'] == 'structuring')}")

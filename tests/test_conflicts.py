@@ -58,7 +58,7 @@ def agent_worker(agent_id, namespace, memory_key, iterations):
             memory_type=MemoryType.WORKING,
         )
 
-        # 极小延迟让两个 agent 有时间重叠
+        # Small delay to allow agent overlap time
         time.sleep(0.05)
 
 
@@ -74,7 +74,7 @@ def main():
     print(f"📝 Each agent writes {ITERATIONS} times (UPDATE)")
     print(f"📝 3 agents running simultaneously\n")
 
-    # 启动线程
+    # Start threads
     threads = []
     for agent_name in ["fraud-detection", "case-history", "compliance-research"]:
         t = threading.Thread(
@@ -97,15 +97,15 @@ def main():
     print(f"\n✅ All agents finished in {elapsed:.1f}s")
     print(f"   Expected events: {3 * ITERATIONS * 2} (3 agents × {ITERATIONS} × read+update)")
 
-    # 等待 Backend 写入完成
+    # Wait for Backend writes to complete
     time.sleep(1)
 
-    # 检查统计
+    # Check stats
     import requests
     stats = requests.get("http://localhost:8000/v1/db/stats").json()
     print(f"\n📊 Database: {stats['total_events']} events")
 
-    # 检测冲突
+    # Detect conflicts
     conflicts = requests.get(
         "http://localhost:8000/v1/analysis/conflicts?window_seconds=60"
     ).json()

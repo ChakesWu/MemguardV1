@@ -1,99 +1,99 @@
-# 🚀 立即开始 - Frontend Dashboard
+# 🚀 Start Now - Frontend Dashboard
 
-**现在可以运行了！**
+**Ready to run now!**
 
 ---
 
-## ⚡ 3 步启动
+## ⚡ 3 Steps to Launch
 
-### 步骤 1: 启动完整系统
+### Step 1: Start the Full System
 
 ```bash
 cd /Users/chakeswu/cursor/MemguardV1
 ./scripts/START_ALL.sh
 ```
 
-这会自动启动：
+This will automatically start:
 - ✅ Backend API (port 8000)
 - ✅ Frontend Dashboard (port 3000)
 
-等待约 30-60 秒...
+Wait about 30-60 seconds...
 
-### 步骤 2: 打开浏览器
+### Step 2: Open Browser
 
 ```
 http://localhost:3000
 ```
 
-你会看到 MemGuard Dashboard！
+You will see the MemGuard Dashboard!
 
-### 步骤 3: 生成测试数据
+### Step 3: Generate Test Data
 
 ```bash
-# 新终端
+# New terminal
 python3 examples/demo_agent.py --mode auto
 ```
 
-Dashboard 会显示事件（目前统计数据可见，事件列表需要 Backend API 补充）
+Dashboard will display events (currently stats are visible, event list needs Backend API to be added)
 
 ---
 
-## 🎯 当前状态
+## 🎯 Current Status
 
-### ✅ 已完成
+### ✅ Completed
 
-| 组件 | 状态 |
+| Component | Status |
 |------|------|
-| Frontend UI | ✅ 100% 完成 |
-| Backend API | ✅ 90% 完成 |
-| SDK | ✅ 100% 完成 |
-| Demo Agent | ✅ 100% 完成 |
-| 启动脚本 | ✅ 100% 完成 |
+| Frontend UI | ✅ 100% Complete |
+| Backend API | ✅ 90% Complete |
+| SDK | ✅ 100% Complete |
+| Demo Agent | ✅ 100% Complete |
+| Startup Scripts | ✅ 100% Complete |
 
-### ⚠️ 还需要
+### ⚠️ Still Needed
 
-1. **Backend 添加事件列表 API** (1小时)
-   - `GET /v1/events` 端点
-   - 这样 Dashboard 就能显示事件列表
+1. **Backend add event list API** (1 hour)
+   - `GET /v1/events` endpoint
+   - This will allow Dashboard to display event list
 
-2. **End-to-end 测试** (1小时)
-   - 验证完整流程
+2. **End-to-end testing** (1 hour)
+   - Verify the full workflow
 
-3. **决策追踪** (2小时)
-   - 实现 LLM call → memory 关联
+3. **Decision tracing** (2 hours)
+   - Implement LLM call → memory association
 
 ---
 
-## 📊 你现在能做什么
+## 📊 What You Can Do Now
 
-### 功能 1: 查看统计数据 ✅
+### Feature 1: View Statistics ✅
 
-打开 http://localhost:3000，可以看到：
-- 总事件数
-- 操作统计
-- Backend 连接状态
+Open http://localhost:3000, you can see:
+- Total event count
+- Operation statistics
+- Backend connection status
 
-### 功能 2: 查看 Dashboard UI ✅
+### Feature 2: View Dashboard UI ✅
 
-完整的界面已经完成：
-- 统计卡片
-- 过滤器
-- 事件列表表格（UI 完成，等待数据）
-- 事件详情 Modal
+The complete interface is done:
+- Stats cards
+- Filters
+- Event list table (UI complete, awaiting data)
+- Event detail Modal
 
-### 功能 3: 使用 API 文档 ✅
+### Feature 3: Use API Documentation ✅
 
 http://localhost:8000/docs
 
-查看所有可用 API 端点
+View all available API endpoints
 
 ---
 
-## 🛠️ 下一步（今天完成）
+## 🛠️ Next Steps (Complete Today)
 
-### 任务 1: 添加事件列表 API (Backend)
+### Task 1: Add Event List API (Backend)
 
-编辑 `backend/app/main.py`，添加：
+Edit `backend/app/main.py`, add:
 
 ```python
 @app.get("/v1/events")
@@ -103,15 +103,15 @@ def get_events(
     operation: str = None,
     agent_id: str = None
 ):
-    """获取事件列表"""
+    """Get event list"""
     return gateway.get_events_list(limit, offset, operation, agent_id)
 ```
 
-然后在 `backend/app/services.py` 的 `MemoryGateway` 类添加方法：
+Then in `backend/app/services.py`, add a method to the `MemoryGateway` class:
 
 ```python
 def get_events_list(self, limit=100, offset=0, operation=None, agent_id=None):
-    """从数据库查询事件"""
+    """Query events from database"""
     with sqlite3.connect(str(DB_PATH)) as conn:
         query = "SELECT * FROM memory_events"
         params = []
@@ -133,77 +133,77 @@ def get_events_list(self, limit=100, offset=0, operation=None, agent_id=None):
         cursor = conn.execute(query, params)
         events = cursor.fetchall()
         
-        # 转换为字典列表
+        # Convert to list of dictionaries
         return {"events": [dict(zip([d[0] for d in cursor.description], row)) for row in events]}
 ```
 
-**完成后重启 Backend，Dashboard 立即可用！**
+**After completion restart Backend, Dashboard is immediately available!**
 
 ---
 
-## 📁 项目文件总览
+## 📁 Project File Overview
 
 ```
 MemguardV1/
-├── frontend/                    ← ✅ Dashboard 完成
+├── frontend/                    ← ✅ Dashboard Complete
 │   ├── app/
-│   │   ├── page.tsx            ← ✅ 主页面 (500+ 行)
+│   │   ├── page.tsx            ← ✅ Main page (500+ lines)
 │   │   ├── layout.tsx          ← ✅ Layout
 │   │   └── globals.css         ← ✅ Tailwind CSS
 │   ├── tailwind.config.js      ← ✅ 
 │   ├── next.config.js          ← ✅ 
-│   ├── package.json            ← ✅ 依赖配置
-│   └── README.md               ← ✅ 使用指南
+│   ├── package.json            ← ✅ Dependency config
+│   └── README.md               ← ✅ Usage guide
 │
-├── scripts/                     ← ✅ 启动脚本
-│   ├── START_ALL.sh            ← ✅ 一键启动
-│   ├── START_BACKEND.sh        ← ✅ 启动后端
-│   ├── START_FRONTEND.sh       ← ✅ 启动前端
+├── scripts/                     ← ✅ Startup scripts
+│   ├── START_ALL.sh            ← ✅ One-click start
+│   ├── START_BACKEND.sh        ← ✅ Start backend
+│   ├── START_FRONTEND.sh       ← ✅ Start frontend
 │   └── ...
 │
-├── backend/                     ← ⚠️ 90% 完成
+├── backend/                     ← ⚠️ 90% Complete
 │   └── app/
-│       ├── main.py             ← ⚠️ 需要添加 /v1/events
-│       └── services.py         ← ⚠️ 需要添加查询方法
+│       ├── main.py             ← ⚠️ Need to add /v1/events
+│       └── services.py         ← ⚠️ Need to add query method
 │
 ├── examples/
-│   └── demo_agent.py           ← ✅ 完成
+│   └── demo_agent.py           ← ✅ Complete
 │
 └── Documents/
-    └── FRONTEND_COMPLETE.md    ← ✅ 本文档
+    └── FRONTEND_COMPLETE.md    ← ✅ This document
 ```
 
 ---
 
-## 🎉 总结
+## 🎉 Summary
 
-### 已完成的工作 (今天)
+### Completed Work (Today)
 
-1. ✅ **Frontend Dashboard 完整 UI** (500+ 行 TypeScript/React)
-2. ✅ **Tailwind CSS 样式系统**
-3. ✅ **启动脚本** (START_ALL.sh / START_FRONTEND.sh)
-4. ✅ **文档** (Frontend README + 完成报告)
+1. ✅ **Frontend Dashboard Full UI** (500+ lines TypeScript/React)
+2. ✅ **Tailwind CSS styling system**
+3. ✅ **Startup scripts** (START_ALL.sh / START_FRONTEND.sh)
+4. ✅ **Documentation** (Frontend README + completion report)
 
-### 立即可用
+### Available Now
 
 ```bash
 ./scripts/START_ALL.sh
-# 打开: http://localhost:3000
+# Open: http://localhost:3000
 ```
 
-### 明天完成
+### Complete Tomorrow
 
-- [ ] Backend 添加 `/v1/events` API
-- [ ] End-to-end 测试
-- [ ] 决策追踪实现
-- [ ] 录制 Demo 视频
+- [ ] Backend add `/v1/events` API
+- [ ] End-to-end testing
+- [ ] Decision tracing implementation
+- [ ] Record Demo video
 
 ---
 
-**🚀 现在就去启动 Dashboard 吧！**
+**🚀 Go launch the Dashboard now!**
 
 ```bash
 ./scripts/START_ALL.sh
 ```
 
-然后打开: **http://localhost:3000** 🎊
+Then open: **http://localhost:3000** 🎊

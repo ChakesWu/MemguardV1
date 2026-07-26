@@ -1,59 +1,54 @@
 # FinCompli Baseline
 
-**Enterprise Multi-Agent Financial Compliance System**  
-**企業級多 Agent 金融合規系統**
+**Enterprise Multi-Agent Financial Compliance System**
 
 Version 0.1 - MVP Baseline
 
 ---
 
-## Overview / 概述
+## Overview
 
 FinCompli Baseline is a **runnable sandbox system** that simulates the compliance automation workflow of a mid-sized Hong Kong/Singapore bank. This baseline demonstrates how enterprise AI agents work together in real business scenarios — from suspicious transaction detection to multi-agent collaborative analysis to manual review to final compliance report submission.
 
-FinCompli Baseline 是一個**可運行的沙盒系統**，模擬一家中型香港/新加坡銀行的合規自動化流程。這個 Baseline 展示了企業 AI Agent 如何在真實業務場景中協作——從可疑交易檢測到多 Agent 協同分析到人工審核到最終合規報告提交。
-
-**Core Value / 核心價值**: This system allows anyone to clearly understand "how enterprise agents work in real business scenarios" at first glance.
+**Core Value**: This system allows anyone to clearly understand "how enterprise agents work in real business scenarios" at first glance.
 
 ---
 
-## System Architecture / 系統架構
+## System Architecture
 
 ```
 User/System Input Suspicious Transaction
-用戶/系統輸入可疑交易
         ↓
-  [Supervisor Agent]  ← Coordinates all analysis work / 協調所有分析工作
+  [Supervisor Agent]  ← Coordinates all analysis work
   ↙           ↘
-[Fraud Detection]  [Case History]  ← Execute in parallel / 並行執行
-詐欺偵測            案例歷史
+[Fraud Detection]  [Case History]  ← Execute in parallel
   ↘           ↙
-  [Supervisor Aggregate] ← Consolidate results / 彙整結果
+  [Supervisor Aggregate] ← Consolidate results
         ↓ (Medium/High Risk)
-  [Compliance Research Agent]  ← Query applicable regulations / 查詢適用法規
+  [Compliance Research Agent]  ← Query applicable regulations
         ↓
-  [Report Generation Agent]    ← Generate SAR draft / 生成 SAR 草稿
+  [Report Generation Agent]    ← Generate SAR draft
         ↓ (High Risk)
-  [Human Review Node]          ← Compliance officer confirms / 合規官確認
+  [Human Review Node]          ← Compliance officer confirms
         ↓
-  [Final Submission/Archive] ← Submit/archive / 提交/存檔
+  [Final Submission/Archive] ← Submit/archive
 ```
 
 ---
 
-## Memory Layer Design / 記憶層設計
+## Memory Layer Design
 
-| Memory Type<br/>記憶類型 | Storage<br/>存儲 | Use Case<br/>使用場景 | Visualization<br/>可視化 |
+| Memory Type | Storage | Use Case | Visualization |
 |------------|-------------|----------------------------|-----------|
-| Short-term Memory<br/>短期記憶 | Thread State | Current conversation context<br/>當前對話上下文 | ✓ |
-| Episodic Memory<br/>情節記憶 | ChromaDB | Historical SAR case retrieval<br/>歷史 SAR 案件檢索 | ✓ **重點** |
-| Semantic Memory<br/>語義記憶 | ChromaDB | Regulatory text query<br/>法規條文查詢 | ✓ |
-| Procedural Memory<br/>程序記憶 | SQLite | SOP rules<br/>SOP 規則 | ✓ |
-| User Preferences<br/>用戶偏好 | SQLite | Compliance officer personalization<br/>合規官個性化設定 | ✓ |
+| Short-term Memory | Thread State | Current conversation context | ✓ |
+| Episodic Memory | ChromaDB | Historical SAR case retrieval | ✓ **Key** |
+| Semantic Memory | ChromaDB | Regulatory text query | ✓ |
+| Procedural Memory | SQLite | SOP rules | ✓ |
+| User Preferences | SQLite | Compliance officer personalization | ✓ |
 
 ---
 
-## Technology Stack / 技術棧
+## Technology Stack
 
 ```
 Language: Python 3.9+
@@ -74,9 +69,9 @@ Language: English
 
 ---
 
-## Quick Start / 快速開始
+## Quick Start
 
-### 1. Environment Setup / 環境搭建
+### 1. Environment Setup
 
 ```bash
 # Clone or navigate to project directory
@@ -94,7 +89,7 @@ pip install -r requirements.txt
 python -c "import langgraph; import chromadb; print('✓ OK')"
 ```
 
-### 2. Configure LLM / 配置 LLM
+### 2. Configure LLM
 
 Edit `.env` file and configure your local Qwen endpoint:
 
@@ -103,7 +98,7 @@ LLM_BASE_URL=http://localhost:8080
 LLM_MODEL=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf
 ```
 
-### 3. Generate Mock Data / 生成模擬數據
+### 3. Generate Mock Data
 
 ```bash
 python mock_data/seed_database.py
@@ -115,17 +110,16 @@ This will generate:
 - 40 regulatory text segments
 - 25 test transaction scenarios
 
-### 4. Run Test Scenario / 運行測試場景
+### 4. Run Test Scenario
 
 ```bash
 # Interactive CLI mode
 python cli/interactive.py --scenario 02
 
 # Scenario 02: Structuring (most complete demo scenario)
-# 場景 02：結構化分拆（最完整的演示場景）
 ```
 
-### 5. Start API Server / 啟動 API 服務
+### 5. Start API Server
 
 ```bash
 uvicorn api.server:app --reload
@@ -136,7 +130,7 @@ uvicorn api.server:app --reload
 
 ---
 
-## Test Scenarios / 測試場景
+## Test Scenarios
 
 | Scenario | Type | Risk Level | Description |
 |----------|------|------------|-------------|
@@ -150,36 +144,36 @@ uvicorn api.server:app --reload
 
 ---
 
-## Directory Structure / 目錄結構
+## Directory Structure
 
 ```
 fincompli-baseline/
-├── README.md                    # This file / 本文件
-├── requirements.txt             # Python dependencies / Python 依賴
-├── .env.example                 # Environment template / 環境變量模板
+├── README.md                    # This file
+├── requirements.txt             # Python dependencies
+├── .env.example                 # Environment template
 ├── .env                         # Environment config (created by setup.py)
-├── setup.py                     # One-click initialization / 一鍵初始化
+├── setup.py                     # One-click initialization
 │
-├── config/                      # Global configuration / 全局配置
-├── agents/                      # All agent definitions / 所有 Agent 定義
-├── graph/                       # LangGraph state and builder / LangGraph 狀態和構建
-├── memory/                      # Memory layer (tiered design) / 記憶層（分層設計）
-├── tools/                       # Enterprise tools mock / 企業工具 Mock
-├── mock_data/                   # Simulated enterprise data / 模擬企業數據
-│   ├── generators/              # Data generators / 數據生成器
-│   └── seeds/                   # Generated data files / 已生成數據文件
-├── api/                         # FastAPI service / FastAPI 服務
-├── cli/                         # Interactive CLI / 交互式 CLI
-├── scenarios/                   # Complete test scenarios / 完整測試場景
-├── audit_logs/                  # Audit log output / 審計日誌輸出
-└── data/                        # Runtime data / 運行時數據
-    ├── chroma/                  # ChromaDB persistence / ChromaDB 持久化
-    └── sqlite/                  # SQLite databases / SQLite 數據庫
+├── config/                      # Global configuration
+├── agents/                      # All agent definitions
+├── graph/                       # LangGraph state and builder
+├── memory/                      # Memory layer (tiered design)
+├── tools/                       # Enterprise tools mock
+├── mock_data/                   # Simulated enterprise data
+│   ├── generators/              # Data generators
+│   └── seeds/                   # Generated data files
+├── api/                         # FastAPI service
+├── cli/                         # Interactive CLI
+├── scenarios/                   # Complete test scenarios
+├── audit_logs/                  # Audit log output
+└── data/                        # Runtime data
+    ├── chroma/                  # ChromaDB persistence
+    └── sqlite/                  # SQLite databases
 ```
 
 ---
 
-## API Endpoints / API 端點
+## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -196,7 +190,7 @@ fincompli-baseline/
 
 ---
 
-## Future Product Integration Points / 後續產品接入點
+## Future Product Integration Points
 
 The following hook points are **reserved but not implemented** in this baseline:
 
@@ -218,7 +212,7 @@ The following hook points are **reserved but not implemented** in this baseline:
 
 ---
 
-## Development Status / 開發狀態
+## Development Status
 
 - [x] TASK 1: Project initialization and environment setup
 - [ ] TASK 2: Mock enterprise data generation
@@ -231,13 +225,13 @@ The following hook points are **reserved but not implemented** in this baseline:
 
 ---
 
-## License / 許可證
+## License
 
 This is a baseline demonstration system for internal development and testing purposes.
 
 ---
 
-## Contact / 聯繫
+## Contact
 
 For questions or issues, please refer to the project documentation.
 

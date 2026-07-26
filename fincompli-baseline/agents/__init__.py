@@ -1,9 +1,7 @@
 """
 Agents Module
-Agent 模塊
 
 Contains all compliance analysis agents.
-包含所有合規分析 Agent。
 """
 
 from .base import BaseAgent

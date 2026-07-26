@@ -1,11 +1,9 @@
 """
 Transaction Scenarios Generator
-交易場景生成器
 
 Generates 25 realistic transaction test scenarios across 5 categories.
-生成 5 類共 25 筆真實的交易測試場景。
 
-Scenario Types / 場景類型:
+Scenario Types:
 1. Normal Cross-Border Transfer (5) - Low risk baseline
 2. Structuring (5) - High risk, primary demo scenario
 3. Geographic Anomaly (5) - Medium risk, unusual destinations
@@ -13,7 +11,6 @@ Scenario Types / 場景類型:
 5. False Positive (5) - Appears suspicious but legitimate
 
 [Business Purpose] Provides realistic test cases for compliance analysis
-[業務目的] 為合規分析提供真實的測試用例
 """
 
 import json
@@ -31,7 +28,6 @@ random.seed(44)
 class TransactionScenarioGenerator:
     """
     Transaction Scenario Generator
-    交易場景生成器
     """
 
     def __init__(self):
@@ -45,10 +41,8 @@ class TransactionScenarioGenerator:
     def generate_normal_transfers(self) -> List[Dict]:
         """
         Scenario 1: Normal Cross-Border Transfers
-        場景 1: 正常跨境匯款
 
         Characteristics: Clear business purpose, within customer profile, proper documentation
-        特徵: 明確商業目的，符合客戶檔案，文件齊全
         """
         scenarios = []
 
@@ -86,10 +80,8 @@ class TransactionScenarioGenerator:
     def generate_structuring_scenarios(self) -> List[Dict]:
         """
         Scenario 2: Structuring (Breaking Large Amounts)
-        場景 2: 結構化分拆
 
         Characteristics: Multiple transactions just below threshold, short time window, multi-jurisdiction
-        特徵: 多筆交易略低於門檻，短時間窗口，多轄區
         """
         scenarios = []
 
@@ -192,10 +184,8 @@ class TransactionScenarioGenerator:
     def generate_geo_anomaly_scenarios(self) -> List[Dict]:
         """
         Scenario 3: Geographic Anomaly
-        場景 3: 異常地域組合
 
         Characteristics: Destination country inconsistent with customer history, high-risk jurisdictions
-        特徵: 目的地國家與客戶歷史不符，高風險管轄區
         """
         scenarios = []
         high_risk_countries = ["IR", "KP", "MM", "AF", "SY"]
@@ -239,10 +229,8 @@ class TransactionScenarioGenerator:
     def generate_kyc_expired_scenarios(self) -> List[Dict]:
         """
         Scenario 4: KYC Expired with High-Value Transaction
-        場景 4: KYC 過期高額交易
 
         Characteristics: Customer KYC documentation expired, large transaction amount
-        特徵: 客戶 KYC 文件過期，大額交易
         """
         scenarios = []
 
@@ -282,10 +270,8 @@ class TransactionScenarioGenerator:
     def generate_false_positive_scenarios(self) -> List[Dict]:
         """
         Scenario 5: False Positive
-        場景 5: 假陽性
 
         Characteristics: Appears suspicious initially but has legitimate business explanation
-        特徵: 初步看似可疑但有合理的商業解釋
         """
         scenarios = []
 
@@ -355,7 +341,6 @@ class TransactionScenarioGenerator:
     def generate_all_scenarios(self) -> List[Dict]:
         """
         Generate all transaction scenarios
-        生成所有交易場景
         """
         print("Generating 5 normal transfer scenarios...")
         self.generated_scenarios.extend(self.generate_normal_transfers())
@@ -386,7 +371,7 @@ class TransactionScenarioGenerator:
 def main():
     """Main execution function"""
     print("=" * 70)
-    print("  Transaction Scenarios Generator / 交易場景生成器")
+    print("  Transaction Scenarios Generator")
     print("=" * 70)
 
     generator = TransactionScenarioGenerator()
@@ -398,7 +383,7 @@ def main():
 
     # Print summary
     print("\n" + "=" * 70)
-    print("  Summary / 摘要")
+    print("  Summary")
     print("=" * 70)
     print(f"  Total Scenarios: {len(scenarios)}")
     print(f"  Normal: {sum(1 for s in scenarios if s['scenario_type'] == 'normal')}")

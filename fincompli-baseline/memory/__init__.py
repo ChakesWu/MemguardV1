@@ -1,9 +1,7 @@
 """
 Memory Layer Module
-記憶層模塊
 
 Unified interface for all memory types in the FinCompli system.
-FinCompli 系統中所有記憶類型的統一接口。
 
 Memory Types:
 - Short-term: Current conversation context (LangGraph State)
@@ -13,7 +11,6 @@ Memory Types:
 - User Preferences: Personalization settings (SQLite)
 
 [Business Purpose] Provides tiered memory architecture for compliance agents
-[業務目的] 為合規 Agent 提供分層記憶架構
 """
 
 import logging
@@ -32,10 +29,8 @@ logger = logging.getLogger(__name__)
 class MemoryLayer:
     """
     Unified Memory Layer Interface
-    統一記憶層接口
 
     Provides single entry point for all memory operations.
-    為所有記憶操作提供單一入口點。
     """
 
     def __init__(
@@ -45,7 +40,6 @@ class MemoryLayer:
     ):
         """
         Initialize all memory subsystems
-        初始化所有記憶子系統
 
         Args:
             chroma_path: Path to ChromaDB persistence directory
@@ -65,7 +59,6 @@ class MemoryLayer:
     def get_memory_statistics(self):
         """
         Get statistics for all memory subsystems
-        獲取所有記憶子系統的統計信息
 
         Returns:
             Dict with statistics for each memory type
@@ -81,7 +74,6 @@ class MemoryLayer:
     def health_check(self):
         """
         Check health of all memory subsystems
-        檢查所有記憶子系統的健康狀態
 
         Returns:
             Dict with health status

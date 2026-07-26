@@ -27,6 +27,21 @@ class DatabaseConfigTests(unittest.TestCase):
         self.assertEqual(config.driver, "postgres")
         self.assertEqual(config.url, "postgresql://memguard:secret@db:5432/memguard")
 
+    def test_postgres_config_connects_with_dictionary_rows(self):
+        from app.database import DatabaseConfig
+
+        config = DatabaseConfig(
+            url="postgresql://memguard:secret@db:5432/memguard",
+            driver="postgres",
+        )
+
+        self.assertTrue(hasattr(config, "connect"))
+        with patch("psycopg.connect") as connect:
+            connection = config.connect()
+
+        self.assertIs(connection, connect.return_value)
+        connect.assert_called_once_with(config.url, row_factory=__import__("psycopg").rows.dict_row)
+
 
 if __name__ == "__main__":
     unittest.main()

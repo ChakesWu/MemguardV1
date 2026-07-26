@@ -56,10 +56,10 @@ class AuditReportGenerator:
         if not events:
             return self._empty_report(session_id, style)
 
-        # 基础统计
+        # Basic statistics
         metadata = self._compute_metadata(events, traces, conflicts)
 
-        # 生成叙述
+        # Generate narrative
         if self.llm_client:
             summary = self._llm_summary(session_id, events, traces, metadata, style)
             timeline = self._llm_timeline(events, traces, style)

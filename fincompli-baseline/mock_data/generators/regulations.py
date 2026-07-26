@@ -1,18 +1,16 @@
 """
 Regulatory Text Generator
-法規條文生成器
 
 Generates 40 realistic regulatory text segments from major AML/compliance frameworks.
-從主要反洗錢/合規框架生成 40 條真實的法規條文片段。
+Generates 40 realistic regulatory text segments from major AML/compliance frameworks.
 
-Distribution / 分佈:
+Distribution:
 - HKMA Anti-Money Laundering Guideline 2023: 15 sections
 - MAS Notice 626 (Singapore): 10 sections
 - FinCEN BSA/AML Requirements: 10 sections
 - FATF 40 Recommendations: 5 sections
 
 [Business Purpose] Provides semantic memory for compliance research
-[業務目的] 為合規研究提供語義記憶
 """
 
 import json
@@ -22,7 +20,6 @@ from typing import List, Dict
 class RegulationGenerator:
     """
     Regulatory Text Generator
-    法規條文生成器
     """
 
     def __init__(self):
@@ -31,7 +28,6 @@ class RegulationGenerator:
     def generate_hkma_regulations(self) -> List[Dict]:
         """
         Generate HKMA AML Guidelines
-        生成 HKMA 反洗錢指引
         """
         regulations = [
             {
@@ -205,7 +201,6 @@ class RegulationGenerator:
     def generate_mas_regulations(self) -> List[Dict]:
         """
         Generate MAS Notice 626 (Singapore)
-        生成新加坡金管局 Notice 626
         """
         regulations = [
             {
@@ -324,7 +319,6 @@ class RegulationGenerator:
     def generate_fincen_regulations(self) -> List[Dict]:
         """
         Generate FinCEN BSA/AML Requirements (US)
-        生成 FinCEN BSA/AML 要求（美國）
         """
         regulations = [
             {
@@ -443,7 +437,6 @@ class RegulationGenerator:
     def generate_fatf_regulations(self) -> List[Dict]:
         """
         Generate FATF 40 Recommendations excerpts
-        生成 FATF 40 項建議摘錄
         """
         regulations = [
             {
@@ -507,7 +500,6 @@ class RegulationGenerator:
     def generate_all_regulations(self) -> List[Dict]:
         """
         Generate all regulatory texts
-        生成所有法規條文
         """
         print("Generating 15 HKMA regulations...")
         self.generated_regulations.extend(self.generate_hkma_regulations())
@@ -535,7 +527,7 @@ class RegulationGenerator:
 def main():
     """Main execution function"""
     print("=" * 70)
-    print("  Regulatory Text Generator / 法規條文生成器")
+    print("  Regulatory Text Generator")
     print("=" * 70)
 
     generator = RegulationGenerator()
@@ -547,7 +539,7 @@ def main():
 
     # Print summary
     print("\n" + "=" * 70)
-    print("  Summary / 摘要")
+    print("  Summary")
     print("=" * 70)
     print(f"  Total Regulations: {len(regulations)}")
     print(f"  HKMA: {sum(1 for r in regulations if r['authority'] == 'HKMA')}")

@@ -1,129 +1,129 @@
-# FinCompli Baseline - TASK 2 進度總結
+# FinCompli Baseline - TASK 2 Progress Summary
 
-## TASK 2 當前狀態：進行中 (60% 完成)
+## TASK 2 Current Status: In Progress (60% Complete)
 
-### ✅ 已完成的部分
+### ✅ Completed Parts
 
-#### 1. 客戶數據生成器 (`mock_data/generators/customers.py`)
-- **功能**: 生成 100 個真實的虛擬客戶檔案
-- **風險分佈**:
-  - 低風險 (60): 本地居民/企業，長期穩定，KYC 完整
-  - 中風險 (30): 離岸公司或近期開戶，部分文件不完整
-  - 高風險 (10): PEP 或 FATF 高風險國家
-- **特點**: 使用 Faker 生成真實姓名和公司名，包含真實的賬號格式
-- **執行**: `python mock_data/generators/customers.py`
+#### 1. Customer Data Generator (`mock_data/generators/customers.py`)
+- **Feature**: Generate 100 realistic virtual customer profiles
+- **Risk Distribution**:
+  - Low Risk (60): Local residents/businesses, long-term stable, complete KYC
+  - Medium Risk (30): Offshore companies or recent accounts, partial documentation
+  - High Risk (10): PEP or FATF high-risk jurisdictions
+- **Characteristics**: Uses Faker to generate realistic names and company names, includes realistic account number formats
+- **Run**: `python mock_data/generators/customers.py`
 
-#### 2. SAR 案件數據生成器 (`mock_data/generators/sar_cases.py`)
-- **功能**: 生成 30 條歷史 SAR 案件
-- **案件類型分佈**:
-  - Structuring (結構化分拆): 10 件
-  - Money Laundering (洗錢): 8 件
-  - Fraud (詐欺): 7 件
-  - Terrorist Financing (恐怖融資): 3 件
-  - Other (其他): 2 件
-- **特點**: 每個案件包含詳細的案件摘要 (case_summary)，用於 RAG 檢索
-- **執行**: `python mock_data/generators/sar_cases.py`
+#### 2. SAR Case Data Generator (`mock_data/generators/sar_cases.py`)
+- **Feature**: Generate 30 historical SAR cases
+- **Case Type Distribution**:
+  - Structuring: 10 cases
+  - Money Laundering: 8 cases
+  - Fraud: 7 cases
+  - Terrorist Financing: 3 cases
+  - Other: 2 cases
+- **Characteristics**: Each case includes detailed case summary (case_summary) for RAG retrieval
+- **Run**: `python mock_data/generators/sar_cases.py`
 
-#### 3. 法規條文生成器 (`mock_data/generators/regulations.py`)
-- **功能**: 生成 40 條真實的法規條文
-- **法規分佈**:
-  - HKMA 反洗錢指引 2023: 15 條
-  - MAS Notice 626 (新加坡): 10 條
-  - FinCEN BSA/AML 要求: 10 條
-  - FATF 40 項建議: 5 條
-- **特點**: 使用真實的法規框架和條款編號，內容簡化但符合實際
-- **執行**: `python mock_data/generators/regulations.py`
-
----
-
-### 🔄 待完成的部分
-
-#### 4. 交易場景生成器 (`mock_data/generators/transactions.py`) - **待創建**
-
-需要生成 5 類交易場景，每類 5 筆，共 25 筆：
-
-1. **正常跨境匯款** (Normal Cross-Border Transfer)
-2. **結構化分拆** (Structuring) - 高風險，主要演示場景
-3. **異常地域組合** (Geographic Anomaly) - 中風險
-4. **KYC 過期高額交易** (Expired KYC High-Value) - 中風險
-5. **假陽性場景** (False Positive) - 測試精準度
-
-#### 5. 數據庫種子腳本 (`mock_data/seed_database.py`) - **待創建**
-
-需要完成：
-- 將客戶數據存入 SQLite
-- 將 SAR 案件 `case_summary` 向量化存入 ChromaDB `episodic_memory` collection
-- 將法規條文 `content` 向量化存入 ChromaDB `semantic_memory` collection
-- 將交易場景存入 SQLite
-- 輸出導入統計信息
+#### 3. Regulation Text Generator (`mock_data/generators/regulations.py`)
+- **Feature**: Generate 40 realistic regulation texts
+- **Regulation Distribution**:
+  - HKMA AML Guidelines 2023: 15 sections
+  - MAS Notice 626 (Singapore): 10 sections
+  - FinCEN BSA/AML Requirements: 10 sections
+  - FATF 40 Recommendations: 5 sections
+- **Characteristics**: Uses real regulatory frameworks and section numbers, content simplified but aligned with actual requirements
+- **Run**: `python mock_data/generators/regulations.py`
 
 ---
 
-## 暫停原因
+### 🔄 Pending Parts
 
-由於回應長度限制，我將在這裡暫停。以下是剩餘工作的預估：
+#### 4. Transaction Scenario Generator (`mock_data/generators/transactions.py`) - **To Be Created**
 
-### 剩餘工作量評估
+Need to generate 5 types of transaction scenarios, 5 each, 25 total:
 
-| 任務 | 預估行數 | 複雜度 | 預估時間 |
+1. **Normal Cross-Border Transfer**
+2. **Structuring** - High risk, primary demo scenario
+3. **Geographic Anomaly** - Medium risk
+4. **Expired KYC High-Value** - Medium risk
+5. **False Positive** - Test accuracy
+
+#### 5. Database Seed Script (`mock_data/seed_database.py`) - **To Be Created**
+
+Need to complete:
+- Store customer data in SQLite
+- Vectorize SAR case `case_summary` and store in ChromaDB `episodic_memory` collection
+- Vectorize regulation text `content` and store in ChromaDB `semantic_memory` collection
+- Store transaction scenarios in SQLite
+- Output import statistics
+
+---
+
+## Pause Reason
+
+Due to response length limits, I will pause here. Below is the estimate for remaining work:
+
+### Remaining Work Estimate
+
+| Task | Est. Lines | Complexity | Est. Time |
 |------|---------|--------|---------|
-| `transactions.py` | ~400 行 | 中 | 需要生成 5 類真實交易場景 |
-| `seed_database.py` | ~300 行 | 中-高 | 需要整合 ChromaDB + SQLite + sentence-transformers |
+| `transactions.py` | ~400 lines | Medium | Need to generate 5 types of realistic transaction scenarios |
+| `seed_database.py` | ~300 lines | Medium-High | Need to integrate ChromaDB + SQLite + sentence-transformers |
 
 ---
 
-## 下一步執行計劃
+## Next Execution Plan
 
-當您輸入「繼續」時，我將：
+When you type "continue", I will:
 
-1. **創建 `transactions.py`**
-   - 生成 5 類共 25 筆測試交易
-   - 重點：Scenario 02 (Structuring) 將是最詳細的演示場景
+1. **Create `transactions.py`**
+   - Generate 5 types, 25 total test transactions
+   - Focus: Scenario 02 (Structuring) will be the most detailed demo scenario
 
-2. **創建 `seed_database.py`**
-   - 建立 SQLite 數據庫結構
-   - 使用 sentence-transformers 生成 embeddings
-   - 將數據導入 ChromaDB 和 SQLite
-   - 提供驗證查詢測試
+2. **Create `seed_database.py`**
+   - Set up SQLite database structure
+   - Use sentence-transformers to generate embeddings
+   - Import data into ChromaDB and SQLite
+   - Provide verification query tests
 
-3. **執行完整測試**
-   - 運行所有生成器
-   - 驗證數據庫導入
-   - 確認向量檢索可用
+3. **Run Full Tests**
+   - Run all generators
+   - Verify database import
+   - Confirm vector retrieval works
 
 ---
 
-## 驗證命令 (當前可用)
+## Verification Commands (Currently Available)
 
 ```bash
-# 驗證已創建的生成器
+# Verify created generators
 cd /Users/chakeswu/cursor/fincompli-baseline
 
-# 測試客戶生成器 (需要先安裝依賴)
+# Test customer generator (install dependencies first)
 python mock_data/generators/customers.py
 
-# 測試 SAR 案件生成器
+# Test SAR case generator
 python mock_data/generators/sar_cases.py
 
-# 測試法規生成器
+# Test regulation generator
 python mock_data/generators/regulations.py
 
-# 檢查已生成的 JSON 文件
+# Check generated JSON files
 ls -lh mock_data/seeds/
 cat mock_data/seeds/customers.json | python -m json.tool | head -50
 ```
 
 ---
 
-## 依賴安裝提醒
+## Dependency Installation Reminder
 
-在運行生成器之前，需要安裝依賴：
+Before running generators, install dependencies:
 
 ```bash
 cd /Users/chakeswu/cursor/fincompli-baseline
 pip install -r requirements.txt
 
-# 或使用虛擬環境
+# Or use virtual environment
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -131,7 +131,7 @@ pip install -r requirements.txt
 
 ---
 
-**當前進度**: TASK 2 - 60% 完成  
-**下一個里程碑**: 完成交易生成器和數據庫種子腳本
+**Current Progress**: TASK 2 - 60% Complete  
+**Next Milestone**: Complete transaction generator and database seed script
 
-請輸入「繼續」以完成 TASK 2 的剩餘工作。
+Please type "continue" to complete TASK 2 remaining work.

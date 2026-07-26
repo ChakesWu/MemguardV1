@@ -1,17 +1,15 @@
 """
 Customer Data Generator
-客戶數據生成器
 
 Generates 100 realistic virtual customers with proper risk categorization.
-生成 100 個真實的虛擬客戶，並進行適當的風險分類。
+Generates 100 realistic virtual customers with proper risk categorization.
 
-Risk Distribution / 風險分佈:
+Risk Distribution:
 - Low Risk (60): Local residents/businesses, stable transaction history, complete KYC
 - Medium Risk (30): Offshore companies or recent accounts, incomplete documentation
 - High Risk (10): PEP or FATF high-risk jurisdictions
 
 [Business Purpose] Provides realistic customer profiles for compliance testing
-[業務目的] 為合規測試提供真實的客戶檔案
 """
 
 import json
@@ -23,14 +21,13 @@ from faker import Faker
 
 # Initialize Faker with English locale
 fake = Faker('en_US')
-Faker.seed(42)  # For reproducibility / 可重現性
+Faker.seed(42)  # For reproducibility
 random.seed(42)
 
 
 class CustomerGenerator:
     """
     Customer Data Generator
-    客戶數據生成器
     """
 
     def __init__(self):
@@ -40,7 +37,6 @@ class CustomerGenerator:
     def _generate_account_number(self, country: str) -> str:
         """
         Generate realistic bank account number by country
-        根據國家生成真實的銀行賬號
         """
         if country == "HK":
             return f"HK{random.randint(10, 99)} {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}"
@@ -56,10 +52,8 @@ class CustomerGenerator:
     def generate_low_risk_customer(self) -> Dict:
         """
         Generate low-risk customer profile
-        生成低風險客戶檔案
 
         Characteristics: Local resident/business, long-term stable, complete KYC
-        特徵：本地居民/企業，長期穩定，KYC 完整
         """
         customer_type = random.choice(["individual", "corporate"])
         country = random.choice(["HK", "SG"])
@@ -94,10 +88,8 @@ class CustomerGenerator:
     def generate_medium_risk_customer(self) -> Dict:
         """
         Generate medium-risk customer profile
-        生成中風險客戶檔案
 
         Characteristics: Offshore companies or recent accounts, partial documentation
-        特徵：離岸公司或近期開戶，部分文件不完整
         """
         customer_type = random.choice(["corporate", "individual"])
         country = random.choice(["KY", "BVI", "HK", "SG", "UK"])
@@ -133,10 +125,8 @@ class CustomerGenerator:
     def generate_high_risk_customer(self) -> Dict:
         """
         Generate high-risk customer profile
-        生成高風險客戶檔案
 
         Characteristics: PEP or FATF high-risk jurisdictions
-        特徵：政治敏感人士或涉及 FATF 高風險名單國家
         """
         customer_type = random.choice(["individual", "corporate"])
         # FATF high-risk jurisdictions (as of 2024)
@@ -173,7 +163,6 @@ class CustomerGenerator:
     def generate_all_customers(self, low_count: int = 60, medium_count: int = 30, high_count: int = 10) -> List[Dict]:
         """
         Generate all customer profiles
-        生成所有客戶檔案
 
         Args:
             low_count: Number of low-risk customers
@@ -204,7 +193,6 @@ class CustomerGenerator:
     def save_to_file(self, output_path: Path):
         """
         Save generated customers to JSON file
-        將生成的客戶保存到 JSON 文件
         """
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -213,9 +201,9 @@ class CustomerGenerator:
 
 
 def main():
-    """Main execution function / 主執行函數"""
+    """Main execution function"""
     print("=" * 70)
-    print("  Customer Data Generator / 客戶數據生成器")
+    print("  Customer Data Generator")
     print("=" * 70)
 
     generator = CustomerGenerator()
@@ -227,7 +215,7 @@ def main():
 
     # Print summary
     print("\n" + "=" * 70)
-    print("  Summary / 摘要")
+    print("  Summary")
     print("=" * 70)
     print(f"  Total Customers: {len(customers)}")
     print(f"  Low Risk: {sum(1 for c in customers if c['risk_level'] == 'low')}")

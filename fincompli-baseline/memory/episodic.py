@@ -1,15 +1,10 @@
 """
 Episodic Memory Module
-情節記憶模塊
 
 Episodic memory stores and retrieves historical SAR case experiences.
 Uses ChromaDB for vector similarity search.
 
-情節記憶存儲和檢索歷史 SAR 案件經驗。
-使用 ChromaDB 進行向量相似度搜索。
-
 [Business Purpose] Enables agents to learn from past compliance cases
-[業務目的] 使 Agent 能夠從過去的合規案例中學習
 """
 
 import logging
@@ -22,7 +17,6 @@ logger = logging.getLogger(__name__)
 class EpisodicMemory:
     """
     Episodic Memory Manager
-    情節記憶管理器
 
     Stores: Historical SAR cases with case summaries
     Query: "Find similar past cases for this transaction pattern"
@@ -76,7 +70,6 @@ class EpisodicMemory:
     ) -> List[Dict[str, Any]]:
         """
         Query for similar historical SAR cases
-        查詢相似的歷史 SAR 案件
 
         Args:
             transaction_pattern: Description of current transaction pattern
@@ -125,7 +118,6 @@ class EpisodicMemory:
     def get_case_by_id(self, sar_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a specific SAR case by ID
-        通過 ID 檢索特定 SAR 案件
 
         Args:
             sar_id: SAR case identifier
@@ -155,7 +147,6 @@ class EpisodicMemory:
     def get_statistics(self) -> Dict[str, Any]:
         """
         Get episodic memory statistics
-        獲取情節記憶統計信息
 
         Returns:
             Statistics dict

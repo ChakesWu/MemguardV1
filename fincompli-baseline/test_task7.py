@@ -8,11 +8,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 print("=" * 70)
-print("  TASK 7 驗證測試：CLI 和場景腳本")
+print("  TASK 7 Verification Test: CLI and Scenarios")
 print("=" * 70)
 
 # Test 1: Check scenarios exist
-print("\n[TEST 1] 檢查場景文件")
+print("\n[TEST 1] Check Scenario Files")
 scenarios_dir = Path("scenarios")
 expected_scenarios = ["01", "02", "03", "04", "05"]
 found = 0
@@ -32,7 +32,7 @@ assert found == 5, f"Expected 5 scenarios, found {found}"
 print(f"\n✅ TEST 1 PASSED: {found}/5 scenarios found\n")
 
 # Test 2: Check CLI file
-print("[TEST 2] 檢查 CLI 文件")
+print("[TEST 2] Check CLI File")
 cli_file = Path("cli/interactive.py")
 assert cli_file.exists(), "CLI file not found"
 print(f"  ✓ cli/interactive.py exists ({cli_file.stat().st_size} bytes)")
@@ -59,7 +59,7 @@ for func in required_functions:
 print(f"\n✅ TEST 2 PASSED: CLI file complete\n")
 
 # Test 3: Validate scenario structure
-print("[TEST 3] 驗證場景結構")
+print("[TEST 3] Validate Scenario Structure")
 required_fields = [
     "scenario_id", "title", "type", "expected_risk_level",
     "transaction_id", "customer_id", "amount", "currency",
@@ -80,7 +80,7 @@ for sid in expected_scenarios:
 print(f"\n✅ TEST 3 PASSED: All scenarios have required fields\n")
 
 # Test 4: Scenario diversity check
-print("[TEST 4] 檢查場景多樣性")
+print("[TEST 4] Check Scenario Diversity")
 scenario_types = []
 risk_levels = []
 
@@ -101,16 +101,16 @@ print(f"\n✅ TEST 4 PASSED: Good scenario diversity\n")
 
 # Summary
 print("=" * 70)
-print("  TASK 7 完成：4/4 測試通過")
+print("  TASK 7 Complete: 4/4 Tests Passed")
 print("=" * 70)
-print("\n已創建文件：")
-print("  • cli/interactive.py       - 交互式 CLI 工具")
-print("  • scenarios/scenario_01.json - 正常跨境轉賬")
-print("  • scenarios/scenario_02.json - ⭐ 結構化分拆（主演示場景）")
-print("  • scenarios/scenario_03.json - KYC 過期高額交易")
-print("  • scenarios/scenario_04.json - 地域異常")
-print("  • scenarios/scenario_05.json - 假陽性（合法大額）")
-print("\n使用方法：")
+print("\nCreated Files:")
+print("  • cli/interactive.py       - Interactive CLI Tool")
+print("  • scenarios/scenario_01.json - Normal Cross-Border Transfer")
+print("  • scenarios/scenario_02.json - * Structuring (Primary Demo Scenario)")
+print("  • scenarios/scenario_03.json - KYC Expired High-Value Transaction")
+print("  • scenarios/scenario_04.json - Geographic Anomaly")
+print("  • scenarios/scenario_05.json - False Positive (Legitimate Large Amount)")
+print("\nUsage:")
 print("  python cli/interactive.py --list")
 print("  python cli/interactive.py --scenario 02")
 print("  python cli/interactive.py --scenario 02 --memory")

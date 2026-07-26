@@ -1,15 +1,10 @@
 """
 Procedural Memory Module
-程序記憶模塊
 
 Procedural memory stores SOP (Standard Operating Procedure) rules.
 Uses SQLite for structured rule queries.
 
-程序記憶存儲 SOP（標準操作程序）規則。
-使用 SQLite 進行結構化規則查詢。
-
 [Business Purpose] Encodes institutional knowledge of how to handle scenarios
-[業務目的] 編碼機構對如何處理場景的知識
 """
 
 import logging
@@ -23,7 +18,6 @@ logger = logging.getLogger(__name__)
 class ProceduralMemory:
     """
     Procedural Memory Manager
-    程序記憶管理器
 
     Stores: SOP rules for different transaction scenarios
     Query: "What are the required actions for structuring cases?"
@@ -58,7 +52,6 @@ class ProceduralMemory:
     def get_rules_by_scenario(self, scenario_type: str) -> List[Dict[str, Any]]:
         """
         Get SOP rules for a specific scenario type
-        獲取特定場景類型的 SOP 規則
 
         Args:
             scenario_type: Type of scenario (e.g., "structuring", "kyc_expired")
@@ -105,7 +98,6 @@ class ProceduralMemory:
     def get_rule_by_risk_score(self, risk_score: float) -> Optional[Dict[str, Any]]:
         """
         Get applicable SOP rule based on risk score
-        根據風險分數獲取適用的 SOP 規則
 
         Args:
             risk_score: Calculated risk score (0-1)
@@ -152,7 +144,6 @@ class ProceduralMemory:
     def get_all_rules(self) -> List[Dict[str, Any]]:
         """
         Get all SOP rules
-        獲取所有 SOP 規則
 
         Returns:
             List of all rule dicts
@@ -184,7 +175,6 @@ class ProceduralMemory:
     def get_statistics(self) -> Dict[str, Any]:
         """
         Get procedural memory statistics
-        獲取程序記憶統計信息
 
         Returns:
             Statistics dict

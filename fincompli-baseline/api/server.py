@@ -1,11 +1,9 @@
 """
 FinCompli Baseline - API Server
-FinCompli Baseline - API 服務器
 
 Main FastAPI application providing REST endpoints for the compliance workflow.
-提供合規工作流程 REST 端點的 FastAPI 主應用。
 
-Endpoints / 端點:
+Endpoints:
   POST /api/analyze          - Submit transaction for analysis
   GET  /api/status/{id}      - Get analysis status
   POST /api/human-decision   - Submit human review decision
@@ -56,7 +54,7 @@ async def startup():
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
-    """System health check / 系統健康檢查"""
+    """System health check"""
     return {
         "status": "ok",
         "version": "0.1.0",
@@ -73,10 +71,8 @@ async def health():
 async def analyze_transaction(request: AnalyzeRequest):
     """
     Submit a transaction for compliance analysis
-    提交交易進行合規分析
 
     Triggers the full multi-agent compliance workflow.
-    觸發完整的多 Agent 合規工作流程。
     """
     thread_id = request.thread_id or f"api-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
@@ -115,7 +111,6 @@ async def analyze_transaction(request: AnalyzeRequest):
 async def get_status(thread_id: str):
     """
     Get analysis status for a thread
-    獲取線程的分析狀態
     """
     state = _store.get(thread_id)
     if not state:
@@ -139,7 +134,6 @@ async def get_status(thread_id: str):
 async def submit_human_decision(thread_id: str, request: HumanDecisionRequest):
     """
     Submit human review decision for a high-risk case
-    提交高風險案件的人工審核決定
     """
     state = _store.get(thread_id)
     if not state:
@@ -169,7 +163,6 @@ async def submit_human_decision(thread_id: str, request: HumanDecisionRequest):
 async def get_report(thread_id: str):
     """
     Get SAR report and complete execution trace
-    獲取 SAR 報告和完整執行追蹤
     """
     state = _store.get(thread_id)
     if not state:
@@ -200,11 +193,9 @@ async def get_report(thread_id: str):
 async def get_memory_traces(thread_id: str):
     """
     Get memory traces for visualization products
-    獲取記憶追蹤數據（供可視化產品使用）
 
     [PRODUCT HOOK POINT]
     This is the primary data source for memory visualization products.
-    這是記憶可視化產品的主要數據源。
     """
     state = _store.get(thread_id)
     if not state:
@@ -241,7 +232,6 @@ async def list_scenarios():
 async def run_scenario(scenario_id: str):
     """
     Run a predefined scenario via API
-    通過 API 運行預定義場景
     """
     import json
     scenario_file = Path(__file__).parent.parent / "scenarios" / f"scenario_{scenario_id}.json"
