@@ -5,3 +5,4 @@ sqlalchemy==2.0.38
 psycopg[binary]==3.2.4
 numpy==1.26.4
 python-dotenv==1.0.1
+requests==2.32.5
