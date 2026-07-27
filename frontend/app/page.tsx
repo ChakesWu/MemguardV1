@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import MemoryDiffViewer, { ChangePulse } from '../components/MemoryDiffViewer'
 import ConflictWarning from '../components/ConflictWarning'
 import AuditReport from '../components/AuditReport'
+import { currentTenantId, loginRequired, logout } from '../lib/auth'
 
 interface MemoryEvent {
   event_id: string
@@ -73,7 +74,6 @@ interface EvidenceItem {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const TRACE_TENANT = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-org'
 
 function computeChangeCount(before: any, after: any): number {
   if (!before && !after) return 0
@@ -167,16 +167,33 @@ export default function DashboardPage() {
   const [showConflicts, setShowConflicts] = useState(false)
   const [showAudit, setShowAudit] = useState(false)
   const [conflictEventIds, setConflictEventIds] = useState<Set<string>>(new Set())
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   useEffect(() => {
+    loginRequired()
+      .then(setAccessToken)
+      .catch((error) => {
+        console.error('Keycloak login failed:', error)
+        setAuthError('Unable to sign in with Keycloak. Check that the local identity service is running.')
+        setLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!accessToken) return
     fetchData()
     const interval = setInterval(fetchData, 5000)
     return () => clearInterval(interval)
-  }, [filter, agentFilter])
+  }, [accessToken, filter, agentFilter])
+
+  const apiFetch = (path: string) => fetch(path, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
 
   const fetchData = async () => {
     try {
-      const statsRes = await fetch(`${API_BASE}/v1/db/stats`)
+      const statsRes = await apiFetch(`${API_BASE}/v1/db/stats`)
       const statsData = await statsRes.json()
       setStats(statsData)
 
@@ -186,28 +203,29 @@ export default function DashboardPage() {
       if (filter !== 'all') params.set('operation', filter)
       if (agentFilter !== 'all') params.set('agent_id', agentFilter)
 
-      const eventsRes = await fetch(`${API_BASE}/v1/events?${params.toString()}`)
+      const eventsRes = await apiFetch(`${API_BASE}/v1/events?${params.toString()}`)
       const eventsData = await eventsRes.json()
       setEvents(eventsData.events || [])
 
       // Fetch decision traces for the selected agent (or all agents for tenant)
       try {
         const traceAgent = agentFilter !== 'all' ? agentFilter : null
-        const traceNamespace = TRACE_TENANT
+        const traceNamespace = currentTenantId()
+        if (!traceNamespace) throw new Error('Tenant claim missing from access token')
         let tracesUrl: string
         if (traceAgent) {
           tracesUrl = `${API_BASE}/v1/trace/agent/${traceNamespace}/${traceAgent}`
         } else {
           tracesUrl = `${API_BASE}/v1/trace/tenant/${traceNamespace}`
         }
-        const tracesRes = await fetch(tracesUrl)
+        const tracesRes = await apiFetch(tracesUrl)
         const tracesData = await tracesRes.json()
         setTraces(tracesData.traces || [])
       } catch {}
 
       // Fetch conflicts
       try {
-        const conflictsRes = await fetch(`${API_BASE}/v1/analysis/conflicts?window_seconds=10`)
+        const conflictsRes = await apiFetch(`${API_BASE}/v1/analysis/conflicts?window_seconds=10`)
         const conflictsData = await conflictsRes.json()
         setConflicts(conflictsData.conflicts || [])
         const ids = new Set<string>()
@@ -231,6 +249,18 @@ export default function DashboardPage() {
     events.forEach(e => { if (e.agent_id) seen.add(e.agent_id) })
     return Array.from(seen).sort()
   })()
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div className="max-w-md text-center">
+          <div className="text-4xl mb-4">🔐</div>
+          <div className="text-xl font-semibold">MemGuard sign-in unavailable</div>
+          <p className="text-gray-400 mt-2">{authError}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading && !stats) {
     return (
@@ -275,6 +305,12 @@ export default function DashboardPage() {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition"
               >
                 🔄 Refresh
+              </button>
+              <button
+                onClick={() => logout()}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
+              >
+                Sign out
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 _db_dir = tempfile.TemporaryDirectory(prefix="memguard-validation-")
@@ -13,12 +14,23 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "backend"))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.auth import TenantPrincipal  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 class SoloValidationGateTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        self.auth_patch = patch(
+            "app.main.authenticate_bearer_token",
+            return_value=TenantPrincipal(
+                subject="test-user", tenant_id="validation-org", claims={"sub": "test-user"}
+            ),
+        )
+        self.auth_patch.start()
+
+    def tearDown(self):
+        self.auth_patch.stop()
 
     def _event(self, event_id, memory_key, timestamp, *, metadata=None):
         return {

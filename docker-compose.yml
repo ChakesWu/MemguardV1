@@ -1,4 +1,16 @@
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.2
+    command: start-dev --import-realm --hostname=http://localhost:${KEYCLOAK_PORT:-8180}
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -18,9 +30,15 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql://memguard:memguard@postgres:5432/memguard
+      MEMGUARD_OIDC_ISSUER: http://localhost:${KEYCLOAK_PORT:-8180}/realms/memguard
+      MEMGUARD_OIDC_JWKS_URL: http://keycloak:8080/realms/memguard/protocol/openid-connect/certs
+      MEMGUARD_OIDC_AUDIENCE: memguard-api
+      MEMGUARD_CORS_ORIGINS: http://localhost:3001
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak:
+        condition: service_started
     ports:
       - "8000:8000"
     healthcheck:
@@ -34,6 +52,9 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_KEYCLOAK_URL: http://localhost:${KEYCLOAK_PORT:-8180}
+        NEXT_PUBLIC_KEYCLOAK_REALM: memguard
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: memguard-frontend
     depends_on:
       backend:
         condition: service_healthy

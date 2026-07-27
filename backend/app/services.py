@@ -456,7 +456,9 @@ class MemoryGateway:
 
         return per_memory_scores, overall_score
 
-    def detect_conflicts(self, window_seconds: float = 5.0) -> dict[str, Any]:
+    def detect_conflicts(
+        self, window_seconds: float = 5.0, tenant_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Detect concurrent writes to the same memory_key by different agents.
 
@@ -467,12 +469,16 @@ class MemoryGateway:
         seen_pairs: set = set()  # dedup: (key, agent_a, agent_b)
         try:
             with self.database.connect() as conn:
-                rows = conn.execute(
-                    """SELECT event_id, agent_id, memory_id, event_type, created_at, content_hash
+                query = """SELECT event_id, agent_id, memory_id, event_type, created_at, content_hash
                        FROM memory_events
                        WHERE event_type IN ('update', 'create')
-                       ORDER BY memory_id, created_at ASC"""
-                ).fetchall()
+                """
+                params: list[Any] = []
+                if tenant_id:
+                    query += " AND tenant_id = ?"
+                    params.append(tenant_id)
+                query += " ORDER BY memory_id, created_at ASC"
+                rows = conn.execute(query, params).fetchall()
 
             groups: dict[str, list] = {}
             for row in rows:
@@ -649,8 +655,11 @@ class MemoryGateway:
                     if all_event_ids:
                         placeholders = ",".join("?" for _ in all_event_ids)
                         event_rows = conn.execute(
-                            f"SELECT event_id, agent_id, memory_id, event_type, source_type, created_at, content_hash, metadata_json FROM memory_events WHERE event_id IN ({placeholders})",
-                            all_event_ids,
+                            f"""SELECT event_id, agent_id, memory_id, event_type, source_type,
+                                       created_at, content_hash, metadata_json
+                                FROM memory_events
+                                WHERE event_id IN ({placeholders}) AND tenant_id = ?""",
+                            (*all_event_ids, d["tenant_id"]),
                         ).fetchall()
                         event_map = {}
                         for er in event_rows:
@@ -768,7 +777,7 @@ class MemoryGateway:
         except Exception as e:
             return {"events": [], "total": 0, "error": str(e)}
 
-    def get_sessions_list(self, limit: int = 50) -> dict[str, Any]:
+    def get_sessions_list(self, limit: int = 50, tenant_id: str | None = None) -> dict[str, Any]:
         """Return distinct sessions with their event counts and latest timestamps."""
         try:
             with self.database.connect() as conn:
@@ -777,18 +786,22 @@ class MemoryGateway:
                     if self.database.driver == "postgres"
                     else "GROUP_CONCAT(DISTINCT agent_id)"
                 )
-                rows = conn.execute(
-                    f"""SELECT trace_id as session_id,
+                query = f"""SELECT trace_id as session_id,
                               COUNT(*) as event_count,
                               MAX(created_at) as latest_event,
                               {agent_aggregation} as agents
                        FROM memory_events
-                       WHERE trace_id != '' AND trace_id IS NOT NULL
+                       WHERE trace_id != '' AND trace_id IS NOT NULL"""
+                params: list[Any] = []
+                if tenant_id:
+                    query += " AND tenant_id = ?"
+                    params.append(tenant_id)
+                query += """
                        GROUP BY trace_id
                        ORDER BY latest_event DESC
-                       LIMIT ?""",
-                    (limit,)
-                ).fetchall()
+                       LIMIT ?"""
+                params.append(limit)
+                rows = conn.execute(query, params).fetchall()
 
                 sessions = []
                 for row in rows:
@@ -803,10 +816,14 @@ class MemoryGateway:
         except Exception as e:
             return {"sessions": [], "total": 0, "error": str(e)}
 
-    def get_memory_influence_history(self, memory_id: str) -> dict[str, Any]:
+    def get_memory_influence_history(
+        self, memory_id: str, tenant_id: str | None = None
+    ) -> dict[str, Any]:
         """Show all decisions this memory influenced."""
         influenced_decisions = []
         for trace in self.decision_traces:
+            if tenant_id and trace.tenant_id != tenant_id:
+                continue
             if memory_id in trace.input_memory_ids:
                 influenced_decisions.append({
                     "trace_id": trace.trace_id,
@@ -863,9 +880,9 @@ class MemoryGateway:
                         f"""SELECT event_id, agent_id, memory_id, event_type, source_type,
                                   created_at, content_hash, metadata_json
                            FROM memory_events
-                           WHERE event_id IN ({placeholders})
+                           WHERE event_id IN ({placeholders}) AND tenant_id = ?
                            ORDER BY created_at ASC""",
-                        input_event_ids
+                        (*input_event_ids, trace_dict["tenant_id"])
                     ).fetchall()
 
                     # Calculate influence scores
@@ -915,9 +932,9 @@ class MemoryGateway:
                         f"""SELECT event_id, agent_id, memory_id, event_type, source_type,
                                   created_at, content_hash
                            FROM memory_events
-                           WHERE event_id IN ({placeholders})
+                           WHERE event_id IN ({placeholders}) AND tenant_id = ?
                            ORDER BY created_at ASC""",
-                        output_event_ids
+                        (*output_event_ids, trace_dict["tenant_id"])
                     ).fetchall()
 
                     for event in output_events:

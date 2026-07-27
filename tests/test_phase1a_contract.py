@@ -5,6 +5,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 _db_dir = tempfile.TemporaryDirectory(prefix="memguard-phase1a-")
@@ -13,12 +14,27 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "backend"))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.auth import TenantPrincipal  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 class Phase1AContractTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        self.tenant_id = "default"
+        self.auth_patch = patch(
+            "app.main.authenticate_bearer_token",
+            side_effect=lambda _header: TenantPrincipal(
+                subject="test-user", tenant_id=self.tenant_id, claims={"sub": "test-user"}
+            ),
+        )
+        self.auth_patch.start()
+
+    def tearDown(self):
+        self.auth_patch.stop()
+
+    def authenticate_as(self, tenant_id: str):
+        self.tenant_id = tenant_id
 
     def test_missing_trace_returns_not_found(self):
         response = self.client.get("/v1/trace/does-not-exist")
@@ -31,6 +47,7 @@ class Phase1AContractTests(unittest.TestCase):
         self.assertEqual(detail_response.json(), {"detail": "Trace not found"})
 
     def test_audit_report_uses_recorded_session_events(self):
+        self.authenticate_as("demo-tenant")
         ingest = self.client.post(
             "/v1/events",
             json={
@@ -58,6 +75,7 @@ class Phase1AContractTests(unittest.TestCase):
         self.assertIn("generic-agent", response.json()["metadata"]["agents"])
 
     def test_trace_returns_explicit_evidence_items(self):
+        self.authenticate_as("evidence-tenant")
         ingest = self.client.post(
             "/v1/events",
             json={
@@ -123,6 +141,7 @@ class Phase1AContractTests(unittest.TestCase):
         self.assertIn("transport.flush(timeout=5)", demo)
 
     def test_missing_linked_event_is_reported_without_fabricated_evidence(self):
+        self.authenticate_as("evidence-tenant")
         created = self.client.post(
             "/v1/trace",
             json={
