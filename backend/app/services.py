@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from .schemas import MemoryQueryRequest, MemoryWriteRequest, TimelineQueryRequest
 from .database import DatabaseConfig
+from .migrations import apply_migrations
 
 @dataclass
 class MemoryEvent:
@@ -87,60 +88,7 @@ class MemoryGateway:
         """Initialize the selected persistence database."""
         if self.database.driver == "sqlite":
             Path(self.database.url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
-        with self.database.connect() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS memory_events (
-                    event_id TEXT PRIMARY KEY,
-                    tenant_id TEXT NOT NULL,
-                    agent_id TEXT NOT NULL,
-                    memory_id TEXT NOT NULL,
-                    trace_id TEXT,
-                    event_type TEXT NOT NULL,
-                    source_type TEXT NOT NULL,
-                    content TEXT,
-                    content_hash TEXT,
-                    policy_decision TEXT NOT NULL DEFAULT 'allow',
-                    trust_score REAL NOT NULL DEFAULT 50.0,
-                    created_at TEXT NOT NULL,
-                    parent_event_id TEXT,
-                    embedding_json TEXT DEFAULT '[]',
-                    metadata_json TEXT DEFAULT '{}'
-                )
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS decision_traces (
-                    trace_id TEXT PRIMARY KEY,
-                    tenant_id TEXT NOT NULL,
-                    agent_id TEXT NOT NULL,
-                    session_id TEXT,
-                    timestamp TEXT NOT NULL,
-                    input_memory_ids_json TEXT DEFAULT '[]',
-                    input_memory_events_json TEXT DEFAULT '[]',
-                    user_input TEXT,
-                    llm_prompt_hash TEXT,
-                    llm_output TEXT,
-                    llm_output_hash TEXT,
-                    llm_model TEXT,
-                    output_memory_ids_json TEXT DEFAULT '[]',
-                    output_memory_events_json TEXT DEFAULT '[]',
-                    memory_influence_scores_json TEXT DEFAULT '{}',
-                    total_influence_score REAL DEFAULT 0.0,
-                    metadata_json TEXT DEFAULT '{}'
-                )
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_events_agent
-                ON memory_events(tenant_id, agent_id, created_at DESC)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_events_memory
-                ON memory_events(memory_id)
-            """)
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_traces_agent
-                ON decision_traces(tenant_id, agent_id)
-            """)
-            conn.commit()
+        apply_migrations(self.database)
 
         # Load existing events into memory cache
         self._load_from_db()
