@@ -12,6 +12,7 @@ class PilotComposeTests(unittest.TestCase):
         self.assertIn("backend:", compose)
         self.assertIn("postgres:", compose)
         self.assertIn("postgresql://memguard:memguard@postgres:5432/memguard", compose)
+        self.assertIn('"3001:3000"', compose)
 
     def test_compose_imports_reproducible_keycloak_realm(self):
         project_root = pathlib.Path(__file__).parent.parent

@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ ARG NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=memguard-frontend
 ENV NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=$NEXT_PUBLIC_KEYCLOAK_CLIENT_ID
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -28,6 +28,6 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/next.config.js ./
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["npm", "run", "start"]

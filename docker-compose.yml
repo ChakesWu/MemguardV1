@@ -59,7 +59,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - "3001:3000"
 
 volumes:
   memguard-postgres:
