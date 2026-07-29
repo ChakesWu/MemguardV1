@@ -35,7 +35,9 @@ audit_generator = AuditReportGenerator()
 @app.middleware("http")
 async def authenticate_evidence_api(request: Request, call_next):
     """Require a Keycloak bearer token for every evidence API endpoint."""
-    if request.url.path.startswith("/v1/"):
+    # Browser CORS preflights do not carry bearer tokens. Let CORSMiddleware
+    # answer them before enforcing authentication on the real request.
+    if request.method != "OPTIONS" and request.url.path.startswith("/v1/"):
         try:
             request.state.principal = authenticate_bearer_token(request.headers.get("Authorization"))
         except AuthenticationError as exc:

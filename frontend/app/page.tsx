@@ -37,7 +37,8 @@ interface Conflict {
 interface Stats {
   total_events: number
   total_decision_traces: number
-  db_path: string
+  database_driver?: string
+  db_path?: string
 }
 
 interface DecisionTrace {
@@ -220,7 +221,7 @@ export default function DashboardPage() {
         }
         const tracesRes = await apiFetch(tracesUrl)
         const tracesData = await tracesRes.json()
-        setTraces(tracesData.traces || [])
+        setTraces(Array.isArray(tracesData) ? tracesData : tracesData.traces || [])
       } catch {}
 
       // Fetch conflicts
@@ -396,7 +397,7 @@ export default function DashboardPage() {
                       <div>No events found</div>
                       <div className="text-sm mt-2">Run the generic LangGraph demo with MemGuard:</div>
                       <code className="block mt-2 text-xs bg-gray-800 px-4 py-2 rounded mx-auto max-w-lg">
-                        python examples/generic_trace_demo.py<br/>
+                        MEMGUARD_API_TOKEN=&lt;Keycloak access token&gt; MEMGUARD_TENANT_ID=acme-dev python examples/generic_trace_demo.py<br/>
                         Then refresh this dashboard
                       </code>
                     </td>
@@ -520,7 +521,7 @@ export default function DashboardPage() {
             <span className="text-red-400">● Backend not available</span>
           )}
           {' | '}
-          <span>DB: {stats?.db_path || 'unknown'}</span>
+          <span>DB: {stats?.database_driver || stats?.db_path || 'unknown'}</span>
         </div>
       </div>
 

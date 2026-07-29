@@ -140,6 +140,11 @@ class Phase1AContractTests(unittest.TestCase):
         demo = (pathlib.Path(__file__).parent.parent / "examples" / "generic_trace_demo.py").read_text()
         self.assertIn("transport.flush(timeout=5)", demo)
 
+    def test_generic_demo_supports_an_authenticated_control_plane(self):
+        demo = (pathlib.Path(__file__).parent.parent / "examples" / "generic_trace_demo.py").read_text()
+        self.assertIn('parser.add_argument("--api-key"', demo)
+        self.assertIn("HttpTransport(backend_url, api_key=api_key", demo)
+
     def test_missing_linked_event_is_reported_without_fabricated_evidence(self):
         self.authenticate_as("evidence-tenant")
         created = self.client.post(

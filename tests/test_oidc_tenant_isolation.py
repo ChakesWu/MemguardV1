@@ -28,6 +28,19 @@ class OidcTenantIsolationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Missing bearer token"})
 
+    def test_cors_preflight_is_not_authenticated(self):
+        response = self.client.options(
+            "/v1/db/stats",
+            headers={
+                "Origin": "http://localhost:3001",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "authorization",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["access-control-allow-origin"], "http://localhost:3001")
+
     def test_token_tenant_cannot_be_overridden_by_request_data(self):
         with self.assertRaises(TenantAccessError):
             enforce_tenant("acme-dev", "other-tenant")

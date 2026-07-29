@@ -74,6 +74,28 @@ class HttpTransportQueueTests(unittest.TestCase):
         self.assertEqual(payload["events"][0]["operation"], "read")
         self.assertEqual(payload["events"][0]["memory_type"], "semantic")
 
+    def test_serializes_framework_metadata_that_is_not_json_native(self):
+        class FrameworkValue:
+            def __str__(self):
+                return "framework-value"
+
+        event = MemoryEvent(
+            agent_id="generic-agent",
+            operation=MemoryOp.CREATE,
+            memory_key="checkpoint:demo",
+            context={"checkpoint": FrameworkValue()},
+        )
+        transport = HttpTransport("http://localhost:8000")
+
+        with patch("memguard.transport.http.http.client.HTTPConnection") as client:
+            connection = client.return_value
+            connection.getresponse.return_value.status = 200
+            transport._emit_sync(event)
+            self.assertTrue(transport.flush(timeout=1))
+
+        payload = json.loads(connection.request.call_args.kwargs["body"].decode("utf-8"))
+        self.assertEqual(payload["events"][0]["context"]["checkpoint"], "framework-value")
+
     def test_uses_http_client_for_local_sdk_delivery(self):
         transport_source = (
             pathlib.Path(__file__).parent.parent / "sdk" / "memguard" / "transport" / "http.py"

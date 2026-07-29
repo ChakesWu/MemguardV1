@@ -150,7 +150,11 @@ class HttpTransport(Transport):
             http.client.HTTPSConnection if endpoint.scheme == "https"
             else http.client.HTTPConnection
         )
-        body = json.dumps(payload).encode("utf-8")
+        # Framework metadata may include checkpoint/message objects that are
+        # meaningful as evidence but are not JSON-native. Preserve delivery
+        # by recording their string representation instead of dropping the
+        # whole batch.
+        body = json.dumps(payload, default=str).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
             **({"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}),

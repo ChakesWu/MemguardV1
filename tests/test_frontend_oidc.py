@@ -15,6 +15,8 @@ class FrontendOidcTests(unittest.TestCase):
         self.assertIn("keycloak-js", auth_source)
         self.assertIn("login-required", auth_source)
         self.assertIn("Authorization", page)
+        self.assertIn("Array.isArray(tracesData)", page)
+        self.assertIn("database_driver", page)
 
 
 if __name__ == "__main__":

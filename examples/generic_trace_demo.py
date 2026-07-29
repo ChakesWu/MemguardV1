@@ -46,10 +46,10 @@ def build_graph(checkpointer: MemGuardCheckpointer):
     return workflow.compile(checkpointer=checkpointer)
 
 
-def run_demo(backend_url: str, tenant_id: str, session_id: str) -> dict:
+def run_demo(backend_url: str, tenant_id: str, session_id: str, api_key: str) -> dict:
     # The SDK is fire-and-forget in production. This deterministic demo waits
     # for queued evidence before reporting a trace ID to the user.
-    transport = HttpTransport(backend_url, timeout=1.0)
+    transport = HttpTransport(backend_url, api_key=api_key, timeout=1.0)
     checkpointer = MemGuardCheckpointer(
         inner=MemorySaver(),
         agent_id="generic-agent",
@@ -116,10 +116,13 @@ def run_demo(backend_url: str, tenant_id: str, session_id: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend-url", default="http://localhost:8000")
-    parser.add_argument("--tenant-id", default="demo-org")
+    parser.add_argument("--tenant-id", default=os.getenv("MEMGUARD_TENANT_ID", "acme-dev"))
     parser.add_argument("--session-id", default="generic-demo-run")
+    parser.add_argument("--api-key", default=os.getenv("MEMGUARD_API_TOKEN"))
     args = parser.parse_args()
-    print(json.dumps(run_demo(args.backend_url, args.tenant_id, args.session_id), indent=2))
+    if not args.api_key:
+        parser.error("--api-key or MEMGUARD_API_TOKEN is required for the authenticated control plane")
+    print(json.dumps(run_demo(args.backend_url, args.tenant_id, args.session_id, args.api_key), indent=2))
 
 
 if __name__ == "__main__":
