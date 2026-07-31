@@ -27,6 +27,7 @@ env/
 .idea/
 .claude/
 .worktrees/
+.superpowers/
 
 # Node
 node_modules/
