@@ -136,6 +136,22 @@ class Phase1AContractTests(unittest.TestCase):
         self.assertNotIn("input_memory_ids.map", page)
         self.assertNotIn("output_memory_ids.map", page)
 
+    def test_output_workspace_preserves_truthful_evidence_boundaries(self):
+        project_root = pathlib.Path(__file__).parent.parent
+        workspace_path = (
+            project_root / "frontend" / "components" / "EvidenceWorkspace.tsx"
+        )
+
+        self.assertTrue(workspace_path.exists())
+        workspace = workspace_path.read_text()
+
+        self.assertIn("evidence_items", workspace)
+        self.assertIn("missing_evidence_event_ids", workspace)
+        self.assertIn("not proof of model causality", workspace.lower())
+        self.assertIn("content_hash", workspace)
+        self.assertIn("timestamp", workspace)
+        self.assertIn("Resulting memory writes", workspace)
+
     def test_generic_demo_flushes_queued_evidence_before_returning(self):
         demo = (pathlib.Path(__file__).parent.parent / "examples" / "generic_trace_demo.py").read_text()
         self.assertIn("transport.flush(timeout=5)", demo)

@@ -18,6 +18,22 @@ class FrontendOidcTests(unittest.TestCase):
         self.assertIn("Array.isArray(tracesData)", page)
         self.assertIn("database_driver", page)
 
+    def test_dashboard_keeps_an_api_backed_output_selected(self):
+        project_root = pathlib.Path(__file__).parent.parent
+        page = (project_root / "frontend" / "app" / "page.tsx").read_text()
+        navigator_path = (
+            project_root / "frontend" / "components" / "OutputNavigator.tsx"
+        )
+
+        self.assertTrue(navigator_path.exists())
+        navigator = navigator_path.read_text()
+
+        self.assertIn("selectedTraceId", page)
+        self.assertIn("setSelectedTraceId", page)
+        self.assertIn("<OutputNavigator", page)
+        self.assertIn("trace.trace_id === selectedTraceId", navigator)
+        self.assertIn("onSelect(trace.trace_id)", navigator)
+
 
 if __name__ == "__main__":
     unittest.main()
