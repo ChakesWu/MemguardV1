@@ -130,11 +130,15 @@ class Phase1AContractTests(unittest.TestCase):
         self.assertEqual([item["side"] for item in evidence], ["input", "output"])
 
     def test_frontend_trace_path_has_no_hard_coded_evidence_rows(self):
-        page = (pathlib.Path(__file__).parent.parent / "frontend" / "app" / "page.tsx").read_text()
-        self.assertIn("evidence_items", page)
-        self.assertNotIn("FINCOMPLI", page)
-        self.assertNotIn("input_memory_ids.map", page)
-        self.assertNotIn("output_memory_ids.map", page)
+        project_root = pathlib.Path(__file__).parent.parent
+        page = (project_root / "frontend" / "app" / "page.tsx").read_text()
+        workspace = (
+            project_root / "frontend" / "components" / "EvidenceWorkspace.tsx"
+        ).read_text()
+        self.assertIn("evidence_items", workspace)
+        self.assertNotIn("FINCOMPLI", page + workspace)
+        self.assertNotIn("input_memory_ids.map", page + workspace)
+        self.assertNotIn("output_memory_ids.map", page + workspace)
 
     def test_output_workspace_preserves_truthful_evidence_boundaries(self):
         project_root = pathlib.Path(__file__).parent.parent

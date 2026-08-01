@@ -121,12 +121,17 @@ class SoloValidationGateTests(unittest.TestCase):
         self.assertEqual(metadata["policy_status"], "quarantine")
 
     def test_frontend_surfaces_metadata_needed_for_debugging(self):
-        page = (pathlib.Path(__file__).parent.parent / "frontend" / "app" / "page.tsx").read_text()
+        project_root = pathlib.Path(__file__).parent.parent
+        workspace = (
+            project_root / "frontend" / "components" / "EvidenceWorkspace.tsx"
+        ).read_text()
+        dashboard = (project_root / "frontend" / "lib" / "dashboard.ts").read_text()
 
-        self.assertIn("source_type", page)
-        self.assertIn("relevance", page)
-        self.assertIn("trust_score", page)
-        self.assertIn("policy_status", page)
+        self.assertIn("evidenceContextLabel", workspace)
+        self.assertIn("source_type", dashboard)
+        self.assertIn("relevance", dashboard)
+        self.assertIn("trust_score", dashboard)
+        self.assertIn("policy_status", dashboard)
 
 
 if __name__ == "__main__":

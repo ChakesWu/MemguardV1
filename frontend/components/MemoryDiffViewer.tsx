@@ -141,9 +141,9 @@ export default function MemoryDiffViewer({ before, after }: { before: any; after
   const effectiveAfter = after || {}
 
   return (
-    <div className="font-mono text-sm border border-gray-800/80 rounded-lg overflow-hidden bg-[#0b0f17]">
+    <div className="mg-diff font-mono text-sm overflow-hidden">
       {/* ── Diff Header ──────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#111820] border-b border-gray-800/60">
+      <div className="mg-diff__header flex items-center justify-between px-4 py-2.5">
         <div className="flex items-center gap-3">
           <ChangePulse count={changedCount} size={9} />
 
