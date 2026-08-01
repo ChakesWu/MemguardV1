@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memguard"
-version = "0.1.0"
-description = "Memory observability and security for AI agents"
+version = "0.2.0"
+description = "Explain how retrieved agent memory relates to an AI output"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
@@ -36,16 +36,20 @@ langgraph = ["langgraph>=0.2.0"]
 openai = ["openai>=1.0.0"]
 rich = ["rich>=13.0.0"]
 all = ["langgraph>=0.2.0", "openai>=1.0.0", "rich>=13.0.0"]
-dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "black>=23.0.0", "mypy>=1.0.0"]
+dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "black>=23.0.0", "mypy>=1.0.0", "build>=1.2", "twine>=5.0"]
+
+[project.scripts]
+memguard = "memguard.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/memguard"
-Documentation = "https://github.com/yourusername/memguard#readme"
-Repository = "https://github.com/yourusername/memguard"
-Issues = "https://github.com/yourusername/memguard/issues"
+Homepage = "https://github.com/ChakesWu/MemguardV1"
+Documentation = "https://github.com/ChakesWu/MemguardV1#readme"
+Repository = "https://github.com/ChakesWu/MemguardV1"
+Issues = "https://github.com/ChakesWu/MemguardV1/issues"
 
-[tool.setuptools]
-packages = ["memguard", "memguard.core", "memguard.transport", "memguard.adapters"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["memguard*"]
 
 [tool.setuptools.package-data]
 memguard = ["py.typed"]

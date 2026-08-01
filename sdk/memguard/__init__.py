@@ -22,7 +22,7 @@ from memguard.core import (
 from memguard.config import LLMConfig, create_llm_client, llm_chat, check_config
 from memguard.demo import run_location_demo
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "MemGuardInterceptor",
