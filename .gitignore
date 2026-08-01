@@ -10,8 +10,9 @@ build/
 *.egg
 
 # Virtual environments
-.venv/
+.venv*/
 myenv/
+backend/myenv/
 venv/
 env/
 

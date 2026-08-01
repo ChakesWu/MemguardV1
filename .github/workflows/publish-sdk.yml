@@ -1,0 +1,45 @@
+name: Publish Python SDK
+
+on:
+  push:
+    tags: ['sdk-v*']
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: Publish to TestPyPI for a release rehearsal
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'testpypi' || 'pypi' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: test -f LICENSE
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e "sdk[dev]"
+      - run: python -m pip install -r backend/requirements.txt
+      - run: python -m pytest -q
+      - run: python -m build sdk
+      - run: python -m twine check sdk/dist/*
+      - name: Publish rehearsal to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.test_pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/dist/
+          repository-url: https://test.pypi.org/legacy/
+      - name: Publish tagged release to PyPI
+        if: github.event_name == 'push'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/dist/

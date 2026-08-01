@@ -5,6 +5,49 @@
 
 ---
 
+## Agent memory visualization MVP
+
+1. Start the local stack:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. Obtain a Keycloak development token:
+
+   ```bash
+   curl -s -X POST http://localhost:8180/realms/memguard/protocol/openid-connect/token \
+     -H 'Content-Type: application/x-www-form-urlencoded' \
+     -d 'client_id=memguard-frontend' \
+     -d 'username=demo@memguard.local' \
+     -d 'password=demo-password' \
+     -d 'grant_type=password'
+   ```
+
+   These credentials are for local development only. Copy the response's `access_token` into `MEMGUARD_API_TOKEN` in your active shell; never commit it.
+
+3. Install the SDK:
+
+   ```bash
+   pip install memguard
+   ```
+
+4. Verify API connectivity, authentication, and tenant access:
+
+   ```bash
+   memguard doctor --api-url http://localhost:8000 --api-token "$MEMGUARD_API_TOKEN" --tenant-id acme-dev
+   ```
+
+5. Record the deterministic New York/Taipei memory failure:
+
+   ```bash
+   memguard demo --api-url http://localhost:8000 --api-token "$MEMGUARD_API_TOKEN" --tenant-id acme-dev
+   ```
+
+6. Open the `dashboard_url` printed by the demo.
+
+---
+
 ## ⚡ Quick Start
 
 ### 5-minute demo (terminal only)

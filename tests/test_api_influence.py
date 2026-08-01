@@ -4,10 +4,13 @@ Integration test: Verify automatic influence score calculation via API.
 """
 
 import requests
+import pytest
 import time
 from datetime import datetime, timezone, timedelta
 
 API_BASE = "http://localhost:8000"
+
+pytestmark = pytest.mark.live
 
 def test_api_influence_calculation():
     """Test that POST /v1/trace auto-calculates influence scores."""

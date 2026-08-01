@@ -148,10 +148,13 @@ class Phase1AContractTests(unittest.TestCase):
 
         self.assertTrue(workspace_path.exists())
         workspace = workspace_path.read_text()
+        explanation = (
+            project_root / "frontend" / "components" / "WhyThisOutput.tsx"
+        ).read_text()
 
         self.assertIn("evidence_items", workspace)
         self.assertIn("missing_evidence_event_ids", workspace)
-        self.assertIn("not proof of model causality", workspace.lower())
+        self.assertIn("not proof of model causality", explanation.lower())
         self.assertIn("content_hash", workspace)
         self.assertIn("timestamp", workspace)
         self.assertIn("Resulting memory writes", workspace)
