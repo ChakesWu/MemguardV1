@@ -21,6 +21,9 @@ class MemGuard:
         capture_content: bool = False,
     ) -> None:
         self._transport = HttpTransport(api_url, api_key=api_key)
+        self.api_url = api_url.rstrip("/")
+        self.agent_id = agent_id
+        self.namespace = namespace
         self._interceptor = MemGuardInterceptor(
             agent_id=agent_id,
             transport=self._transport,
@@ -73,6 +76,7 @@ class MemGuard:
         output_event_ids: Optional[list[str]] = None,
         model: str = "",
         current_facts: Optional[dict[str, Any]] = None,
+        timestamp: Optional[str] = None,
     ) -> DecisionTrace:
         return self._interceptor.record_output(
             user_input=user_input,
@@ -81,6 +85,7 @@ class MemGuard:
             output_event_ids=output_event_ids,
             model=model,
             current_facts=current_facts,
+            timestamp=timestamp,
         )
 
     def flush(self, timeout: float = 5.0) -> bool:

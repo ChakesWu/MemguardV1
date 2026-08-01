@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from .event import DecisionTrace, MemoryEvent, MemoryOp, MemoryType, hash_content
@@ -179,6 +180,7 @@ class MemGuardInterceptor:
         output_event_ids: Optional[list[str]] = None,
         model: str = "",
         current_facts: Optional[dict[str, Any]] = None,
+        timestamp: Optional[str] = None,
     ) -> DecisionTrace:
         """Record an output and the evidence available when it was generated."""
         return self.trace_decision(
@@ -188,6 +190,7 @@ class MemGuardInterceptor:
             output_text=output_text,
             user_input=user_input,
             model=model,
+            timestamp=timestamp,
             current_facts=current_facts or {},
             evidence_model="recorded_lineage",
             causality_claim="not_proven",
@@ -234,6 +237,7 @@ class MemGuardInterceptor:
         agent_id: str | None = None,
         user_input: str = "",
         model: str = "",
+        timestamp: Optional[str] = None,
         **context: Any,
     ) -> DecisionTrace:
         """
@@ -257,6 +261,7 @@ class MemGuardInterceptor:
             agent_id=agent_id or self.agent_id,
             session_id=self._session_id or "unknown",
             namespace=self.namespace,
+            timestamp=timestamp or datetime.now(timezone.utc).isoformat(),
             input_event_ids=input_event_ids,
             output_event_ids=output_event_ids,
             prompt_hash=(

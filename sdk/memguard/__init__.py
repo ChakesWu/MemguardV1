@@ -20,6 +20,7 @@ from memguard.core import (
     MemoryType,
 )
 from memguard.config import LLMConfig, create_llm_client, llm_chat, check_config
+from memguard.demo import run_location_demo
 
 __version__ = "0.1.0"
 
@@ -30,6 +31,7 @@ __all__ = [
     "MemoryOp",
     "MemoryType",
     "DecisionTrace",
+    "run_location_demo",
     # LLM config
     "LLMConfig",
     "create_llm_client",
