@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from .schemas import MemoryQueryRequest, MemoryWriteRequest, TimelineQueryRequest
 from .database import DatabaseConfig
+from .explanation import explain_trace
 from .migrations import apply_migrations
 
 
@@ -740,6 +741,12 @@ class MemoryGateway:
                         d["evidence_items"] = [
                             {**item, "side": "input"} for item in input_details
                         ] + [{**item, "side": "output"} for item in output_details]
+
+                    d["explanation"] = explain_trace(
+                        d,
+                        d["evidence_items"],
+                        d["missing_evidence_event_ids"],
+                    )
 
                     results.append(d)
                 return results
