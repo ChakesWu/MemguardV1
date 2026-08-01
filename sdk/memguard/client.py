@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from .core.event import DecisionTrace, MemoryType
 from .core.interceptor import MemGuardInterceptor
-from .transport.http import HttpTransport
+from .transport.http import HttpTransport, TransportStats
 
 
 class MemGuard:
@@ -85,3 +85,6 @@ class MemGuard:
 
     def flush(self, timeout: float = 5.0) -> bool:
         return self._transport.flush(timeout)
+
+    def delivery_status(self) -> TransportStats:
+        return self._transport.stats()

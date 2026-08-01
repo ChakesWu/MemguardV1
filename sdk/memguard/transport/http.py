@@ -13,11 +13,25 @@ import queue
 import threading
 import time
 import http.client
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from ..core.interceptor import Transport
 
 logger = logging.getLogger("memguard.transport.http")
+
+
+@dataclass(frozen=True)
+class TransportStats:
+    queued: int
+    delivered: int
+    dropped: int
+    failed: int
+    pending: int
+
+    @property
+    def evidence_complete(self) -> bool:
+        return self.pending == 0 and self.dropped == 0 and self.failed == 0
 
 
 class HttpTransport(Transport):
@@ -52,6 +66,10 @@ class HttpTransport(Transport):
         self.batch_wait = max(0.0, batch_wait)
         self._queue: queue.Queue = queue.Queue(maxsize=self.queue_capacity)
         self._pending = 0
+        self._queued = 0
+        self._delivered = 0
+        self._dropped = 0
+        self._failed = 0
         self._pending_lock = threading.Condition()
         self._worker = threading.Thread(target=self._drain, daemon=True)
         self._worker.start()
@@ -67,6 +85,16 @@ class HttpTransport(Transport):
                 self._pending_lock.wait(remaining)
         return True
 
+    def stats(self) -> TransportStats:
+        with self._pending_lock:
+            return TransportStats(
+                queued=self._queued,
+                delivered=self._delivered,
+                dropped=self._dropped,
+                failed=self._failed,
+                pending=self._pending,
+            )
+
     async def emit(self, event) -> None:
         """Send event synchronously (no-thread for reliability during demo)."""
         self._emit_sync(event)
@@ -75,11 +103,13 @@ class HttpTransport(Transport):
         """Queue a record without blocking the instrumented agent."""
         with self._pending_lock:
             self._pending += 1
+            self._queued += 1
         try:
             self._queue.put_nowait(event)
         except queue.Full:
             with self._pending_lock:
                 self._pending -= 1
+                self._dropped += 1
                 self._pending_lock.notify_all()
             logger.warning("MemGuard HTTP transport queue is full; dropping new record")
 
@@ -99,18 +129,29 @@ class HttpTransport(Transport):
                         except queue.Empty:
                             break
                         if not hasattr(next_event, "operation"):
-                            self._deliver_batch(batch)
+                            delivered = self._deliver_batch(batch)
+                            self._record_delivery(batch, delivered)
                             self._complete(batch)
                             batch = [next_event]
                             break
                         batch.append(next_event)
 
                     if hasattr(batch[0], "operation"):
-                        self._deliver_batch(batch)
+                        delivered = self._deliver_batch(batch)
                     else:
-                        self._deliver(batch[0])
+                        delivered = self._deliver(batch[0])
+                else:
+                    delivered = self._deliver(event)
+                self._record_delivery(batch, delivered)
             finally:
                 self._complete(batch)
+
+    def _record_delivery(self, events, delivered: bool) -> None:
+        with self._pending_lock:
+            if delivered:
+                self._delivered += len(events)
+            else:
+                self._failed += len(events)
 
     def _complete(self, events) -> None:
         for _ in events:
@@ -119,26 +160,37 @@ class HttpTransport(Transport):
             self._pending -= len(events)
             self._pending_lock.notify_all()
 
-    def _deliver(self, event) -> None:
+    def _deliver(self, event) -> bool:
         """Deliver one queued record with bounded retries."""
         if hasattr(event, "operation"):
-            self._deliver_batch([event])
-            return
+            return self._deliver_batch([event])
 
         try:
             from dataclasses import asdict
+
             payload = asdict(event)
             self._post("/v1/trace", payload)
+            return True
         except Exception:
             # Observability must never break production, but log at warning
-            logger.warning("MemGuard HTTP transport: trace emit failed (backend may be down)", exc_info=False)
+            logger.warning(
+                "MemGuard HTTP transport: trace emit failed (backend may be down)",
+                exc_info=False,
+            )
+            return False
 
-    def _deliver_batch(self, events) -> None:
+    def _deliver_batch(self, events) -> bool:
         try:
             from dataclasses import asdict
+
             self._post("/v1/events", {"events": [asdict(event) for event in events]})
+            return True
         except Exception:
-            logger.warning("MemGuard HTTP transport: event batch emit failed (backend may be down)", exc_info=False)
+            logger.warning(
+                "MemGuard HTTP transport: event batch emit failed (backend may be down)",
+                exc_info=False,
+            )
+            return False
 
     def _post(self, path: str, payload) -> None:
         endpoint = urlparse(self.base_url)
@@ -147,7 +199,8 @@ class HttpTransport(Transport):
 
         request_path = f"{endpoint.path.rstrip('/')}{path}"
         connection_type = (
-            http.client.HTTPSConnection if endpoint.scheme == "https"
+            http.client.HTTPSConnection
+            if endpoint.scheme == "https"
             else http.client.HTTPConnection
         )
         # Framework metadata may include checkpoint/message objects that are
@@ -161,7 +214,9 @@ class HttpTransport(Transport):
         }
         for attempt in range(self.max_retries):
             try:
-                connection = connection_type(endpoint.hostname, endpoint.port, timeout=self.timeout)
+                connection = connection_type(
+                    endpoint.hostname, endpoint.port, timeout=self.timeout
+                )
                 connection.request("POST", request_path, body=body, headers=headers)
                 response = connection.getresponse()
                 response.read()
@@ -172,4 +227,4 @@ class HttpTransport(Transport):
             except (OSError, http.client.HTTPException):
                 if attempt + 1 == self.max_retries:
                     raise
-                time.sleep(self.retry_backoff * (2 ** attempt))
+                time.sleep(self.retry_backoff * (2**attempt))
