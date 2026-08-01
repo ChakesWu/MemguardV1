@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from .event import DecisionTrace, MemoryEvent, MemoryOp, MemoryType, hash_content
 
@@ -126,6 +126,72 @@ class MemGuardInterceptor:
         )
 
         return event.event_id
+
+    def record_retrieval(
+        self,
+        memory_key: str,
+        value: dict[str, Any],
+        *,
+        memory_type: MemoryType = MemoryType.SEMANTIC,
+        source_type: str,
+        source_id: Optional[str] = None,
+        memory_created_at: Optional[str] = None,
+        memory_last_verified_at: Optional[str] = None,
+        retrieval_query: str = "",
+        retrieval_score: Optional[float] = None,
+        retrieval_rank: Optional[int] = None,
+        included_in_prompt: bool = True,
+        fact_key: Optional[str] = None,
+        max_age_seconds: Optional[int] = None,
+    ) -> str:
+        """Record one memory selected by the application for generation."""
+        if retrieval_rank is not None and retrieval_rank < 1:
+            raise ValueError("retrieval_rank must be at least 1")
+        if retrieval_score is not None and not 0.0 <= retrieval_score <= 1.0:
+            raise ValueError("retrieval_score must be between 0.0 and 1.0")
+        if max_age_seconds is not None and max_age_seconds < 0:
+            raise ValueError("max_age_seconds must not be negative")
+
+        return self.record(
+            operation=MemoryOp.READ,
+            memory_key=memory_key,
+            after_value=value,
+            memory_type=memory_type,
+            evidence_role="retrieved_memory",
+            source_type=source_type,
+            source_id=source_id,
+            memory_created_at=memory_created_at,
+            memory_last_verified_at=memory_last_verified_at,
+            retrieval_query=retrieval_query,
+            retrieval_score=retrieval_score,
+            retrieval_rank=retrieval_rank,
+            included_in_prompt=included_in_prompt,
+            fact_key=fact_key,
+            max_age_seconds=max_age_seconds,
+        )
+
+    def record_output(
+        self,
+        *,
+        user_input: str,
+        output_text: str,
+        input_event_ids: list[str],
+        output_event_ids: Optional[list[str]] = None,
+        model: str = "",
+        current_facts: Optional[dict[str, Any]] = None,
+    ) -> DecisionTrace:
+        """Record an output and the evidence available when it was generated."""
+        return self.trace_decision(
+            input_event_ids=input_event_ids,
+            output_event_ids=output_event_ids or [],
+            prompt_text=user_input,
+            output_text=output_text,
+            user_input=user_input,
+            model=model,
+            current_facts=current_facts or {},
+            evidence_model="recorded_lineage",
+            causality_claim="not_proven",
+        )
 
     def _emit_async(self, event: MemoryEvent) -> None:
         """Emit event via transport in a background thread. Never blocks, never raises."""

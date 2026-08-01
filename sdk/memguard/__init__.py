@@ -11,14 +11,21 @@ memory operation (read/write/update/delete) without requiring
 changes to your agent code.
 """
 
-from memguard.core import MemGuardInterceptor
-from memguard.core import MemoryEvent, MemoryOp, MemoryType, DecisionTrace
+from memguard.client import MemGuard
+from memguard.core import (
+    DecisionTrace,
+    MemGuardInterceptor,
+    MemoryEvent,
+    MemoryOp,
+    MemoryType,
+)
 from memguard.config import LLMConfig, create_llm_client, llm_chat, check_config
 
 __version__ = "0.1.0"
 
 __all__ = [
     "MemGuardInterceptor",
+    "MemGuard",
     "MemoryEvent",
     "MemoryOp",
     "MemoryType",
