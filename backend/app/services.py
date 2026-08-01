@@ -13,6 +13,7 @@ from .schemas import MemoryQueryRequest, MemoryWriteRequest, TimelineQueryReques
 from .database import DatabaseConfig
 from .migrations import apply_migrations
 
+
 @dataclass
 class MemoryEvent:
     event_id: str
@@ -35,6 +36,7 @@ class MemoryEvent:
 @dataclass
 class DecisionTrace:
     """Links memory reads to LLM decisions and resulting memory writes."""
+
     trace_id: str
     tenant_id: str
     agent_id: str
@@ -77,7 +79,7 @@ class MemoryGateway:
     def __init__(self) -> None:
         self.database = DatabaseConfig.from_env()
         self.adapter = LocalLLMAdapter()
-        self.events: list[MemoryEvent] = []           # In-memory cache
+        self.events: list[MemoryEvent] = []  # In-memory cache
         self.decision_traces: list[DecisionTrace] = []  # In-memory cache
         self._lock = threading.Lock()
         self._init_db()
@@ -87,7 +89,9 @@ class MemoryGateway:
     def _init_db(self) -> None:
         """Initialize the selected persistence database."""
         if self.database.driver == "sqlite":
-            Path(self.database.url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
+            Path(self.database.url.removeprefix("sqlite:///")).parent.mkdir(
+                parents=True, exist_ok=True
+            )
         apply_migrations(self.database)
 
         # Load existing events into memory cache
@@ -129,14 +133,22 @@ class MemoryGateway:
                 conn.execute(
                     self._event_upsert_statement(),
                     (
-                        event.event_id, event.tenant_id, event.agent_id,
-                        event.memory_id, event.trace_id, event.event_type,
-                        event.source_type, event.content, event.content_hash,
-                        event.policy_decision, event.trust_score, event.created_at,
+                        event.event_id,
+                        event.tenant_id,
+                        event.agent_id,
+                        event.memory_id,
+                        event.trace_id,
+                        event.event_type,
+                        event.source_type,
+                        event.content,
+                        event.content_hash,
+                        event.policy_decision,
+                        event.trust_score,
+                        event.created_at,
                         event.parent_event_id,
                         json.dumps(event.embedding),
                         json.dumps(event.metadata),
-                    )
+                    ),
                 )
                 conn.commit()
         except Exception:
@@ -196,14 +208,19 @@ class MemoryGateway:
                     tenant_id=raw.get("namespace", raw.get("tenant_id", "default")),
                     agent_id=raw.get("agent_id", "unknown"),
                     memory_id=raw.get("memory_key", str(uuid4())),
-                    trace_id=raw.get("session_id") or raw.get("caused_by") or str(uuid4()),
+                    trace_id=raw.get("session_id")
+                    or raw.get("caused_by")
+                    or str(uuid4()),
                     event_type=raw.get("operation", "unknown"),
-                    source_type=raw.get("memory_type") or raw.get("context", {}).get("source", "sdk"),
+                    source_type=raw.get("memory_type")
+                    or raw.get("context", {}).get("source", "sdk"),
                     content=str(raw.get("after_value") or raw.get("content_hash", "")),
                     content_hash=raw.get("content_hash", ""),
                     policy_decision="allow",
                     trust_score=80.0,
-                    created_at=raw.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                    created_at=raw.get(
+                        "timestamp", datetime.now(timezone.utc).isoformat()
+                    ),
                     metadata=meta,
                 )
 
@@ -215,13 +232,22 @@ class MemoryGateway:
             except Exception:
                 rejected.append(raw.get("event_id", "unknown"))
 
-        return {"accepted": len(accepted), "rejected": len(rejected), "event_ids": accepted}
+        return {
+            "accepted": len(accepted),
+            "rejected": len(rejected),
+            "event_ids": accepted,
+        }
 
     def _policy_check(self, content: str, source_type: str) -> str:
         lowered = content.lower()
         if source_type == "system":
             return "allow"
-        risky = ["ignore previous", "forget above", "system prompt override", "instruction override"]
+        risky = [
+            "ignore previous",
+            "forget above",
+            "system prompt override",
+            "instruction override",
+        ]
         if any(pattern in lowered for pattern in risky):
             return "quarantine"
         return "allow"
@@ -264,39 +290,65 @@ class MemoryGateway:
         with self._lock:
             self.events.append(event)
         self._persist_event(event)
-        return {"memory_id": memory_id, "trace_id": trace_id, "event": self._serialize(event)}
+        return {
+            "memory_id": memory_id,
+            "trace_id": trace_id,
+            "event": self._serialize(event),
+        }
 
     def query_memory(self, payload: MemoryQueryRequest) -> dict[str, Any]:
         filtered = [
-            event for event in self.events
-            if event.tenant_id == payload.tenant_id and event.agent_id == payload.agent_id
+            event
+            for event in self.events
+            if event.tenant_id == payload.tenant_id
+            and event.agent_id == payload.agent_id
         ]
         ranked = sorted(
             filtered,
-            key=lambda event: (event.policy_decision == "quarantine", abs(len(event.content) - len(payload.query))),
+            key=lambda event: (
+                event.policy_decision == "quarantine",
+                abs(len(event.content) - len(payload.query)),
+            ),
         )
         results = [self._serialize(event) for event in ranked]
         return {"query": payload.query, "count": len(results), "results": results}
 
     def trace_memory(self, memory_id: str) -> dict[str, Any]:
-        trace = [self._serialize(event) for event in self.events if event.memory_id == memory_id]
+        trace = [
+            self._serialize(event)
+            for event in self.events
+            if event.memory_id == memory_id
+        ]
         return {"memory_id": memory_id, "events": trace}
 
     def timeline(self, payload: TimelineQueryRequest) -> dict[str, Any]:
         items = [
             self._serialize(event)
             for event in self.events
-            if event.tenant_id == payload.tenant_id and event.agent_id == payload.agent_id
+            if event.tenant_id == payload.tenant_id
+            and event.agent_id == payload.agent_id
         ]
         items.sort(key=lambda item: item["created_at"], reverse=True)
         return {"items": items[: payload.limit]}
 
     def observability_summary(self, tenant_id: str, agent_id: str) -> dict[str, Any]:
-        items = [event for event in self.events if event.tenant_id == tenant_id and event.agent_id == agent_id]
+        items = [
+            event
+            for event in self.events
+            if event.tenant_id == tenant_id and event.agent_id == agent_id
+        ]
         total_events = len(items)
-        quarantined_events = sum(1 for event in items if event.policy_decision == "quarantine")
-        active_memories = len({event.memory_id for event in items if event.policy_decision == "allow"})
-        avg_trust_score = round(sum(event.trust_score for event in items) / total_events, 2) if total_events else 0.0
+        quarantined_events = sum(
+            1 for event in items if event.policy_decision == "quarantine"
+        )
+        active_memories = len(
+            {event.memory_id for event in items if event.policy_decision == "allow"}
+        )
+        avg_trust_score = (
+            round(sum(event.trust_score for event in items) / total_events, 2)
+            if total_events
+            else 0.0
+        )
         latest_event_at = max((event.created_at for event in items), default=None)
         return {
             "tenant_id": tenant_id,
@@ -310,7 +362,9 @@ class MemoryGateway:
 
     # ── Conflict Detection ────────────────────────────────────
 
-    def _calculate_influence_scores(self, trace: DecisionTrace) -> tuple[dict[str, float], float]:
+    def _calculate_influence_scores(
+        self, trace: DecisionTrace
+    ) -> tuple[dict[str, float], float]:
         """
         Auto-calculate influence scores for each input memory event.
 
@@ -332,7 +386,9 @@ class MemoryGateway:
 
         # Parse decision timestamp
         try:
-            decision_time = datetime.fromisoformat(trace.timestamp.replace("Z", "+00:00"))
+            decision_time = datetime.fromisoformat(
+                trace.timestamp.replace("Z", "+00:00")
+            )
         except Exception:
             decision_time = datetime.now(timezone.utc)
 
@@ -344,7 +400,7 @@ class MemoryGateway:
                 with self.database.connect() as conn:
                     row = conn.execute(
                         "SELECT source_type, created_at FROM memory_events WHERE event_id = ?",
-                        (event_id,)
+                        (event_id,),
                     ).fetchone()
                     if row:
                         event_data = dict(row)
@@ -357,7 +413,7 @@ class MemoryGateway:
                     if event.event_id == event_id:
                         event_data = {
                             "source_type": event.source_type,
-                            "created_at": event.created_at
+                            "created_at": event.created_at,
                         }
                         break
 
@@ -372,11 +428,15 @@ class MemoryGateway:
                 "episodic": 0.8,
                 "procedural": 0.6,
                 "working": 0.4,
-            }.get(memory_type, 0.5)  # Default for 'sdk' or unknown
+            }.get(
+                memory_type, 0.5
+            )  # Default for 'sdk' or unknown
 
             # Calculate recency_weight
             try:
-                memory_time = datetime.fromisoformat(event_data["created_at"].replace("Z", "+00:00"))
+                memory_time = datetime.fromisoformat(
+                    event_data["created_at"].replace("Z", "+00:00")
+                )
                 delta_seconds = (decision_time - memory_time).total_seconds()
 
                 if delta_seconds < 60:
@@ -398,7 +458,9 @@ class MemoryGateway:
 
         # Overall score = average of individual scores, capped at 1.0
         if per_memory_scores:
-            overall_score = min(1.0, sum(per_memory_scores.values()) / len(per_memory_scores))
+            overall_score = min(
+                1.0, sum(per_memory_scores.values()) / len(per_memory_scores)
+            )
         else:
             overall_score = 0.0
 
@@ -452,29 +514,40 @@ class MemoryGateway:
                             continue
 
                         try:
-                            ta = datetime.fromisoformat(a["created_at"].replace("Z", "+00:00"))
-                            tb = datetime.fromisoformat(b["created_at"].replace("Z", "+00:00"))
+                            ta = datetime.fromisoformat(
+                                a["created_at"].replace("Z", "+00:00")
+                            )
+                            tb = datetime.fromisoformat(
+                                b["created_at"].replace("Z", "+00:00")
+                            )
                             delta = abs((tb - ta).total_seconds())
                         except Exception:
                             continue
 
                         if delta <= window_seconds:
                             seen_pairs.add(full_key)
-                            severity = "critical" if delta < 0.5 else "high" if delta < 2.0 else "medium"
-                            conflicts.append({
-                                "memory_key": mem_key,
-                                "agent_a": a["agent_id"],
-                                "agent_b": b["agent_id"],
-                                "event_a": a["event_id"],
-                                "event_b": b["event_id"],
-                                "time_a": a["created_at"],
-                                "time_b": b["created_at"],
-                                "delta_seconds": round(delta, 3),
-                                "severity": severity,
-                                "hash_a": a["content_hash"],
-                                "hash_b": b["content_hash"],
-                                "same_content": a["content_hash"] == b["content_hash"],
-                            })
+                            severity = (
+                                "critical"
+                                if delta < 0.5
+                                else "high" if delta < 2.0 else "medium"
+                            )
+                            conflicts.append(
+                                {
+                                    "memory_key": mem_key,
+                                    "agent_a": a["agent_id"],
+                                    "agent_b": b["agent_id"],
+                                    "event_a": a["event_id"],
+                                    "event_b": b["event_id"],
+                                    "time_a": a["created_at"],
+                                    "time_b": b["created_at"],
+                                    "delta_seconds": round(delta, 3),
+                                    "severity": severity,
+                                    "hash_a": a["content_hash"],
+                                    "hash_b": b["content_hash"],
+                                    "same_content": a["content_hash"]
+                                    == b["content_hash"],
+                                }
+                            )
 
         except Exception as e:
             return {"conflicts": [], "total": 0, "error": str(e)}
@@ -488,8 +561,12 @@ class MemoryGateway:
         """Store a decision trace linking memories to LLM decisions."""
         # Auto-calculate influence scores if not provided
         if not trace.memory_influence_scores or trace.total_influence_score == 0.0:
-            trace.memory_influence_scores, trace.total_influence_score = self._calculate_influence_scores(trace)
-        self.decision_traces.append(trace)
+            trace.memory_influence_scores, trace.total_influence_score = (
+                self._calculate_influence_scores(trace)
+            )
+        with self._lock:
+            self.decision_traces.append(trace)
+        self._persist_trace(trace)
 
     def _persist_trace(self, trace: DecisionTrace) -> None:
         """Write a decision trace to the selected persistence database."""
@@ -498,19 +575,24 @@ class MemoryGateway:
                 conn.execute(
                     self._trace_upsert_statement(),
                     (
-                        trace.trace_id, trace.tenant_id, trace.agent_id,
-                        trace.session_id, trace.timestamp,
+                        trace.trace_id,
+                        trace.tenant_id,
+                        trace.agent_id,
+                        trace.session_id,
+                        trace.timestamp,
                         json.dumps(trace.input_memory_ids),
                         json.dumps(trace.input_memory_events),
-                        trace.user_input, trace.llm_prompt_hash,
-                        trace.llm_output, trace.llm_output_hash,
+                        trace.user_input,
+                        trace.llm_prompt_hash,
+                        trace.llm_output,
+                        trace.llm_output_hash,
                         trace.llm_model,
                         json.dumps(trace.output_memory_ids),
                         json.dumps(trace.output_memory_events),
                         json.dumps(trace.memory_influence_scores),
                         trace.total_influence_score,
                         json.dumps(trace.metadata),
-                    )
+                    ),
                 )
                 conn.commit()
         except Exception:
@@ -555,15 +637,23 @@ class MemoryGateway:
         traces = self._query_traces("WHERE trace_id = ?", (trace_id,), 1)
         return traces[0] if traces else None
 
-    def get_decision_traces_by_agent(self, tenant_id: str, agent_id: str, limit: int = 50) -> list[dict[str, Any]]:
+    def get_decision_traces_by_agent(
+        self, tenant_id: str, agent_id: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
         """Get all decision traces for a specific agent (from SQLite, survives restart)."""
-        return self._query_traces("WHERE tenant_id = ? AND agent_id = ?", (tenant_id, agent_id), limit)
+        return self._query_traces(
+            "WHERE tenant_id = ? AND agent_id = ?", (tenant_id, agent_id), limit
+        )
 
-    def get_decision_traces_by_tenant(self, tenant_id: str, limit: int = 100) -> list[dict[str, Any]]:
+    def get_decision_traces_by_tenant(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """Get all decision traces for a tenant across all agents (from SQLite)."""
         return self._query_traces("WHERE tenant_id = ?", (tenant_id,), limit)
 
-    def _query_traces(self, where_clause: str, params: tuple, limit: int) -> list[dict[str, Any]]:
+    def _query_traces(
+        self, where_clause: str, params: tuple, limit: int
+    ) -> list[dict[str, Any]]:
         """Shared SQLite query helper for decision traces. Enriches with event details."""
         try:
             with self.database.connect() as conn:
@@ -593,8 +683,12 @@ class MemoryGateway:
                     # `*_memory_events` are persisted event IDs. The parallel
                     # `*_memory_ids` fields are logical memory keys and cannot
                     # safely be used to resolve evidence rows.
-                    input_event_ids = d.get("input_memory_events", d.get("input_memory_ids", []))
-                    output_event_ids = d.get("output_memory_events", d.get("output_memory_ids", []))
+                    input_event_ids = d.get(
+                        "input_memory_events", d.get("input_memory_ids", [])
+                    )
+                    output_event_ids = d.get(
+                        "output_memory_events", d.get("output_memory_ids", [])
+                    )
                     all_event_ids = input_event_ids + output_event_ids
                     d["input_memory_details"] = []
                     d["output_memory_details"] = []
@@ -631,19 +725,21 @@ class MemoryGateway:
                         d["missing_evidence_event_ids"] = [
                             eid for eid in all_event_ids if eid not in event_map
                         ]
-                        input_details = [event_map[eid] for eid in input_ids if eid in event_map]
+                        input_details = [
+                            event_map[eid] for eid in input_ids if eid in event_map
+                        ]
                         d["input_memory_details"] = input_details
                         # Enrich output side
-                        output_details = [event_map[eid] for eid in output_ids if eid in event_map]
+                        output_details = [
+                            event_map[eid] for eid in output_ids if eid in event_map
+                        ]
                         d["output_memory_details"] = output_details
                         # Canonical Phase 1A evidence contract. Every item is
                         # an event actually persisted in memory_events, with an
                         # explicit side describing how it relates to the output.
                         d["evidence_items"] = [
                             {**item, "side": "input"} for item in input_details
-                        ] + [
-                            {**item, "side": "output"} for item in output_details
-                        ]
+                        ] + [{**item, "side": "output"} for item in output_details]
 
                     results.append(d)
                 return results
@@ -700,32 +796,38 @@ class MemoryGateway:
                     meta = json.loads(row["metadata_json"] or "{}")
                     before_val = meta.pop("_before_value", None)
                     after_val = meta.pop("_after_value", None)
-                    events.append({
-                        "event_id": row["event_id"],
-                        "agent_id": row["agent_id"],
-                        "session_id": row["trace_id"] or "",
-                        "operation": row["event_type"],
-                        "memory_key": row["memory_id"],
-                        "namespace": row["tenant_id"],
-                        "memory_type": row["source_type"],
-                        "content_hash": row["content_hash"] or "",
-                        "timestamp": row["created_at"],
-                        "context": meta,
-                        "before_value": before_val,
-                        "after_value": after_val,
-                    })
+                    events.append(
+                        {
+                            "event_id": row["event_id"],
+                            "agent_id": row["agent_id"],
+                            "session_id": row["trace_id"] or "",
+                            "operation": row["event_type"],
+                            "memory_key": row["memory_id"],
+                            "namespace": row["tenant_id"],
+                            "memory_type": row["source_type"],
+                            "content_hash": row["content_hash"] or "",
+                            "timestamp": row["created_at"],
+                            "context": meta,
+                            "before_value": before_val,
+                            "after_value": after_val,
+                        }
+                    )
 
                 count_query = "SELECT COUNT(*) as cnt FROM memory_events"
                 if conditions:
                     count_query += " WHERE " + " AND ".join(conditions)
-                count_row = conn.execute(count_query, params[:-2] if conditions else []).fetchone()
+                count_row = conn.execute(
+                    count_query, params[:-2] if conditions else []
+                ).fetchone()
                 total = count_row["cnt"] if count_row else 0
 
                 return {"events": events, "total": total}
         except Exception as e:
             return {"events": [], "total": 0, "error": str(e)}
 
-    def get_sessions_list(self, limit: int = 50, tenant_id: str | None = None) -> dict[str, Any]:
+    def get_sessions_list(
+        self, limit: int = 50, tenant_id: str | None = None
+    ) -> dict[str, Any]:
         """Return distinct sessions with their event counts and latest timestamps."""
         try:
             with self.database.connect() as conn:
@@ -753,12 +855,14 @@ class MemoryGateway:
 
                 sessions = []
                 for row in rows:
-                    sessions.append({
-                        "session_id": row["session_id"],
-                        "event_count": row["event_count"],
-                        "latest_event": row["latest_event"],
-                        "agents": row["agents"].split(",") if row["agents"] else [],
-                    })
+                    sessions.append(
+                        {
+                            "session_id": row["session_id"],
+                            "event_count": row["event_count"],
+                            "latest_event": row["latest_event"],
+                            "agents": row["agents"].split(",") if row["agents"] else [],
+                        }
+                    )
 
                 return {"sessions": sessions, "total": len(sessions)}
         except Exception as e:
@@ -773,21 +877,29 @@ class MemoryGateway:
             if tenant_id and trace.tenant_id != tenant_id:
                 continue
             if memory_id in trace.input_memory_ids:
-                influenced_decisions.append({
-                    "trace_id": trace.trace_id,
-                    "timestamp": trace.timestamp,
-                    "user_input": trace.user_input,
-                    "llm_output_preview": trace.llm_output[:200] + "..." if len(trace.llm_output) > 200 else trace.llm_output,
-                    "influence_score": trace.memory_influence_scores.get(memory_id, 0.0),
-                    "total_memories_used": len(trace.input_memory_ids)
-                })
+                influenced_decisions.append(
+                    {
+                        "trace_id": trace.trace_id,
+                        "timestamp": trace.timestamp,
+                        "user_input": trace.user_input,
+                        "llm_output_preview": (
+                            trace.llm_output[:200] + "..."
+                            if len(trace.llm_output) > 200
+                            else trace.llm_output
+                        ),
+                        "influence_score": trace.memory_influence_scores.get(
+                            memory_id, 0.0
+                        ),
+                        "total_memories_used": len(trace.input_memory_ids),
+                    }
+                )
 
         influenced_decisions.sort(key=lambda d: d["timestamp"], reverse=True)
 
         return {
             "memory_id": memory_id,
             "total_influences": len(influenced_decisions),
-            "decisions": influenced_decisions
+            "decisions": influenced_decisions,
         }
 
     def get_decision_trace_detail(self, trace_id: str) -> dict[str, Any]:
@@ -807,8 +919,7 @@ class MemoryGateway:
 
                 # Get decision trace
                 trace = conn.execute(
-                    "SELECT * FROM decision_traces WHERE trace_id = ?",
-                    (trace_id,)
+                    "SELECT * FROM decision_traces WHERE trace_id = ?", (trace_id,)
                 ).fetchone()
 
                 if not trace:
@@ -817,8 +928,12 @@ class MemoryGateway:
                 trace_dict = dict(trace)
 
                 # Parse JSON fields
-                input_event_ids = json.loads(trace_dict.get("input_memory_events_json", "[]"))
-                output_event_ids = json.loads(trace_dict.get("output_memory_events_json", "[]"))
+                input_event_ids = json.loads(
+                    trace_dict.get("input_memory_events_json", "[]")
+                )
+                output_event_ids = json.loads(
+                    trace_dict.get("output_memory_events_json", "[]")
+                )
 
                 # Get input memory events with details
                 input_influences = []
@@ -830,11 +945,13 @@ class MemoryGateway:
                            FROM memory_events
                            WHERE event_id IN ({placeholders}) AND tenant_id = ?
                            ORDER BY created_at ASC""",
-                        (*input_event_ids, trace_dict["tenant_id"])
+                        (*input_event_ids, trace_dict["tenant_id"]),
                     ).fetchall()
 
                     # Calculate influence scores
-                    decision_time = datetime.fromisoformat(trace_dict["timestamp"].replace("Z", "+00:00"))
+                    decision_time = datetime.fromisoformat(
+                        trace_dict["timestamp"].replace("Z", "+00:00")
+                    )
 
                     for event in input_events:
                         event_dict = dict(event)
@@ -856,21 +973,29 @@ class MemoryGateway:
                         after_val = metadata.get("_after_value")
                         if after_val:
                             content_str = str(after_val)
-                            content_preview = content_str[:100] + "..." if len(content_str) > 100 else content_str
+                            content_preview = (
+                                content_str[:100] + "..."
+                                if len(content_str) > 100
+                                else content_str
+                            )
 
-                        input_influences.append({
-                            "event_id": event_dict["event_id"],
-                            "memory_key": event_dict["memory_id"],
-                            "memory_type": event_dict["source_type"],
-                            "operation": event_dict["event_type"],
-                            "influence_score": influence_score,
-                            "content_preview": content_preview,
-                            "similarity_score": similarity,
-                            "timestamp": event_dict["created_at"],
-                        })
+                        input_influences.append(
+                            {
+                                "event_id": event_dict["event_id"],
+                                "memory_key": event_dict["memory_id"],
+                                "memory_type": event_dict["source_type"],
+                                "operation": event_dict["event_type"],
+                                "influence_score": influence_score,
+                                "content_preview": content_preview,
+                                "similarity_score": similarity,
+                                "timestamp": event_dict["created_at"],
+                            }
+                        )
 
                     # Sort by influence score
-                    input_influences.sort(key=lambda x: x["influence_score"], reverse=True)
+                    input_influences.sort(
+                        key=lambda x: x["influence_score"], reverse=True
+                    )
 
                 # Get output memory events
                 output_influences = []
@@ -882,19 +1007,21 @@ class MemoryGateway:
                            FROM memory_events
                            WHERE event_id IN ({placeholders}) AND tenant_id = ?
                            ORDER BY created_at ASC""",
-                        (*output_event_ids, trace_dict["tenant_id"])
+                        (*output_event_ids, trace_dict["tenant_id"]),
                     ).fetchall()
 
                     for event in output_events:
                         event_dict = dict(event)
-                        output_influences.append({
-                            "event_id": event_dict["event_id"],
-                            "memory_key": event_dict["memory_id"],
-                            "memory_type": event_dict["source_type"],
-                            "operation": event_dict["event_type"],
-                            "content_hash": event_dict.get("content_hash", ""),
-                            "timestamp": event_dict["created_at"],
-                        })
+                        output_influences.append(
+                            {
+                                "event_id": event_dict["event_id"],
+                                "memory_key": event_dict["memory_id"],
+                                "memory_type": event_dict["source_type"],
+                                "operation": event_dict["event_type"],
+                                "content_hash": event_dict.get("content_hash", ""),
+                                "timestamp": event_dict["created_at"],
+                            }
+                        )
 
                 # Extract reasoning from LLM output
                 llm_output = trace_dict.get("llm_output", "")
@@ -910,21 +1037,17 @@ class MemoryGateway:
                     "agent_id": trace_dict["agent_id"],
                     "session_id": trace_dict.get("session_id", ""),
                     "timestamp": trace_dict["timestamp"],
-
                     # Memory IN
                     "input_memory_influences": input_influences[:5],  # Top 5
                     "total_input_influence": round(total_input_influence, 2),
-
                     # Decision
                     "decision_type": reasoning_data["decision_type"],
                     "decision_confidence": reasoning_data["confidence"],
                     "decision_reasoning": reasoning_data["reasoning"],
                     "key_factors": reasoning_data.get("key_factors", []),
                     "llm_output": llm_output,
-
                     # Memory OUT
                     "output_memory_influences": output_influences,
-
                     # Metadata
                     "user_input": trace_dict.get("user_input", ""),
                     "metadata": json.loads(trace_dict.get("metadata_json", "{}")),
@@ -932,14 +1055,12 @@ class MemoryGateway:
 
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             return {"error": str(e)}
 
     def _calculate_single_influence(
-        self,
-        event: dict,
-        decision_time: datetime,
-        similarity: float = None
+        self, event: dict, decision_time: datetime, similarity: float = None
     ) -> float:
         """Calculate influence score for a single memory event"""
         # Base score
@@ -950,7 +1071,9 @@ class MemoryGateway:
 
         # Recency boost
         try:
-            event_time = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+            event_time = datetime.fromisoformat(
+                event["created_at"].replace("Z", "+00:00")
+            )
             hours_diff = (decision_time - event_time).total_seconds() / 3600
             recency = 1.0 / (1.0 + hours_diff)
         except Exception:

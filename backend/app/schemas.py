@@ -65,3 +65,20 @@ class SDKEvent(BaseModel):
 
 class EventsIngestRequest(BaseModel):
     events: list[SDKEvent]
+
+
+class SDKDecisionTrace(BaseModel):
+    trace_id: str = ""
+    agent_id: str = "unknown"
+    session_id: Optional[str] = None
+    namespace: str = "default"
+    timestamp: str = ""
+    input_event_ids: list[str] = Field(default_factory=list)
+    prompt_hash: str = ""
+    user_input: str = ""
+    model: str = ""
+    output_hash: str = ""
+    output_summary: str = ""
+    output_event_ids: list[str] = Field(default_factory=list)
+    memory_influence_score: float = 0.0
+    context: dict[str, Any] = Field(default_factory=dict)

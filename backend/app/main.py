@@ -10,19 +10,30 @@ from fastapi.responses import JSONResponse
 from .agent import MemoryAwareAgent
 from .llm import LLMClient
 from .schemas import (
-    AgentRunRequest, MemoryQueryRequest, MemoryWriteRequest,
-    TimelineQueryRequest, EventsIngestRequest
+    AgentRunRequest,
+    MemoryQueryRequest,
+    MemoryWriteRequest,
+    TimelineQueryRequest,
+    EventsIngestRequest,
+    SDKDecisionTrace,
 )
 from .services import MemoryGateway
 from .audit import AuditReportGenerator, export_to_markdown
-from .auth import AuthenticationError, TenantAccessError, authenticate_bearer_token, enforce_tenant
+from .auth import (
+    AuthenticationError,
+    TenantAccessError,
+    authenticate_bearer_token,
+    enforce_tenant,
+)
 
 app = FastAPI(title="MemGuard v1", version="0.1.0")
 
 # Allow frontend and SDK to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("MEMGUARD_CORS_ORIGINS", "http://localhost:3001").split(","),
+    allow_origins=os.getenv("MEMGUARD_CORS_ORIGINS", "http://localhost:3001").split(
+        ","
+    ),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,7 +50,9 @@ async def authenticate_evidence_api(request: Request, call_next):
     # answer them before enforcing authentication on the real request.
     if request.method != "OPTIONS" and request.url.path.startswith("/v1/"):
         try:
-            request.state.principal = authenticate_bearer_token(request.headers.get("Authorization"))
+            request.state.principal = authenticate_bearer_token(
+                request.headers.get("Authorization")
+            )
         except AuthenticationError as exc:
             return JSONResponse(status_code=401, content={"detail": str(exc)})
     return await call_next(request)
@@ -54,7 +67,11 @@ def request_tenant(request: Request, requested_tenant_id: str | None = None) -> 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "llm_model": agent.llm.model, "llm_base_url": agent.llm.base_url}
+    return {
+        "status": "ok",
+        "llm_model": agent.llm.model,
+        "llm_base_url": agent.llm.base_url,
+    }
 
 
 @app.post("/v1/memory/write")
@@ -78,14 +95,18 @@ def timeline(payload: TimelineQueryRequest, request: Request):
 @app.post("/v1/agent/run")
 def run_agent(payload: AgentRunRequest, request: Request):
     tenant_id = request_tenant(request, payload.tenant_id)
-    return agent.run(tenant_id, payload.agent_id, payload.input, payload.session_id).__dict__
+    return agent.run(
+        tenant_id, payload.agent_id, payload.input, payload.session_id
+    ).__dict__
 
 
 @app.get("/v1/memory/{memory_id}/trace")
 def trace_memory(memory_id: str, request: Request):
     tenant_id = request_tenant(request)
     trace = gateway.trace_memory(memory_id)
-    trace["events"] = [event for event in trace["events"] if event["tenant_id"] == tenant_id]
+    trace["events"] = [
+        event for event in trace["events"] if event["tenant_id"] == tenant_id
+    ]
     return trace
 
 
@@ -97,7 +118,7 @@ def observability_summary(tenant_id: str, agent_id: str, request: Request):
 # Decision Trace Endpoints
 @app.post("/v1/trace")
 @app.post("/v1/traces")  # alias for SDK backward compatibility
-def create_decision_trace(payload: dict, request: Request):
+def create_decision_trace(payload: SDKDecisionTrace, request: Request):
     """
     Receive a DecisionTrace from the SDK.
 
@@ -105,29 +126,27 @@ def create_decision_trace(payload: dict, request: Request):
     """
     from .services import DecisionTrace as DTrace
 
-    tenant_id = request_tenant(request, payload.get("namespace", payload.get("tenant_id")))
+    tenant_id = request_tenant(request, payload.namespace)
     trace = DTrace(
-        trace_id=payload.get("trace_id", ""),
+        trace_id=payload.trace_id,
         tenant_id=tenant_id,
-        agent_id=payload.get("agent_id", "unknown"),
-        session_id=payload.get("session_id"),
-        timestamp=payload.get("timestamp", ""),
-        input_memory_ids=payload.get("input_event_ids", []),
-        input_memory_events=payload.get("input_event_ids", []),
-        user_input="(see prompt_hash for traceability)",
-        llm_prompt_hash=payload.get("prompt_hash", ""),
-        llm_output=payload.get("output_summary", ""),
-        llm_output_hash=payload.get("output_hash", ""),
-        llm_model=payload.get("context", {}).get("analysis_type", "fincompli-agent"),
-        output_memory_ids=payload.get("output_event_ids", []),
-        output_memory_events=payload.get("output_event_ids", []),
-        memory_influence_scores=payload.get("memory_influence_scores", {}),
-        total_influence_score=payload.get("memory_influence_score", 0.0),
-        metadata=payload.get("context", {}),
+        agent_id=payload.agent_id,
+        session_id=payload.session_id,
+        timestamp=payload.timestamp,
+        input_memory_ids=payload.input_event_ids,
+        input_memory_events=payload.input_event_ids,
+        user_input=payload.user_input,
+        llm_prompt_hash=payload.prompt_hash,
+        llm_output=payload.output_summary,
+        llm_output_hash=payload.output_hash,
+        llm_model=payload.model,
+        output_memory_ids=payload.output_event_ids,
+        output_memory_events=payload.output_event_ids,
+        memory_influence_scores={},
+        total_influence_score=payload.memory_influence_score,
+        metadata=payload.context,
     )
     gateway.create_decision_trace(trace)
-    # Also persist to DB
-    gateway._persist_trace(trace)
     return {"status": "ok", "trace_id": trace.trace_id}
 
 
@@ -161,19 +180,25 @@ def get_decision_trace_detail(trace_id: str, request: Request):
 
 
 @app.get("/v1/trace/agent/{tenant_id}/{agent_id}")
-def get_agent_decision_traces(tenant_id: str, agent_id: str, request: Request, limit: int = 50):
+def get_agent_decision_traces(
+    tenant_id: str, agent_id: str, request: Request, limit: int = 50
+):
     """Get all decision traces for an agent."""
     return {
         "tenant_id": request_tenant(request, tenant_id),
         "agent_id": agent_id,
-        "traces": gateway.get_decision_traces_by_agent(request_tenant(request, tenant_id), agent_id, limit)
+        "traces": gateway.get_decision_traces_by_agent(
+            request_tenant(request, tenant_id), agent_id, limit
+        ),
     }
 
 
 @app.get("/v1/trace/tenant/{tenant_id}")
 def get_tenant_traces(tenant_id: str, request: Request, limit: int = 100):
     """Get all decision traces for a tenant (all agents)."""
-    return gateway.get_decision_traces_by_tenant(request_tenant(request, tenant_id), limit)
+    return gateway.get_decision_traces_by_tenant(
+        request_tenant(request, tenant_id), limit
+    )
 
 
 @app.get("/v1/memory/{memory_id}/influence")
@@ -183,6 +208,7 @@ def get_memory_influence(memory_id: str, request: Request):
 
 
 # ── SDK Ingestion (used by LangGraph adapter, etc.) ──────────
+
 
 @app.post("/v1/events")
 def ingest_events(payload: EventsIngestRequest, request: Request):
@@ -198,6 +224,7 @@ def ingest_events(payload: EventsIngestRequest, request: Request):
 
 
 # ── Analysis APIs ──────────────────────────────────────
+
 
 @app.get("/v1/analysis/conflicts")
 def get_conflicts(request: Request, window_seconds: Optional[float] = 5.0):
@@ -231,7 +258,9 @@ def generate_audit_report(
     # Session IDs are persisted on the event trace_id column. Do not search
     # memory keys: that can silently return an empty report for a real run.
     tenant_id = request_tenant(request)
-    events_data = gateway.get_events_list(limit=5000, session_id=session_id, tenant_id=tenant_id)
+    events_data = gateway.get_events_list(
+        limit=5000, session_id=session_id, tenant_id=tenant_id
+    )
     events = events_data.get("events", [])
 
     # Get decision traces
@@ -242,7 +271,9 @@ def generate_audit_report(
             agent_id = events[0].get("agent_id")
             traces = [
                 trace
-                for trace in gateway.get_decision_traces_by_agent(tenant_id, agent_id, limit=5000)
+                for trace in gateway.get_decision_traces_by_agent(
+                    tenant_id, agent_id, limit=5000
+                )
                 if trace.get("session_id") == session_id
             ]
     except Exception:
@@ -251,7 +282,8 @@ def generate_audit_report(
     # Get conflicts
     conflicts_data = gateway.detect_conflicts(window_seconds=60.0, tenant_id=tenant_id)
     conflicts = [
-        c for c in conflicts_data.get("conflicts", [])
+        c
+        for c in conflicts_data.get("conflicts", [])
         if any(e.get("event_id") in [c["event_a"], c["event_b"]] for e in events)
     ]
 
@@ -266,6 +298,7 @@ def generate_audit_report(
 
     if format == "markdown":
         from fastapi.responses import PlainTextResponse
+
         md = export_to_markdown(report)
         return PlainTextResponse(md, media_type="text/markdown")
 
@@ -273,6 +306,7 @@ def generate_audit_report(
 
 
 # ── Dashboard APIs (Event List & Session List) ──────────
+
 
 @app.get("/v1/events")
 def get_events(
@@ -326,10 +360,12 @@ def db_stats(request: Request):
         with gateway.database.connect() as conn:
             tenant_id = request_tenant(request)
             event_count = conn.execute(
-                "SELECT COUNT(*) AS total FROM memory_events WHERE tenant_id = ?", (tenant_id,)
+                "SELECT COUNT(*) AS total FROM memory_events WHERE tenant_id = ?",
+                (tenant_id,),
             ).fetchone()["total"]
             trace_count = conn.execute(
-                "SELECT COUNT(*) AS total FROM decision_traces WHERE tenant_id = ?", (tenant_id,)
+                "SELECT COUNT(*) AS total FROM decision_traces WHERE tenant_id = ?",
+                (tenant_id,),
             ).fetchone()["total"]
         stats = {
             "database_driver": gateway.database.driver,
