@@ -10,7 +10,7 @@ import asyncio
 import logging
 from typing import Any
 
-from .event import MemoryEvent, MemoryOp, MemoryType, DecisionTrace
+from .event import DecisionTrace, MemoryEvent, MemoryOp, MemoryType, hash_content
 
 logger = logging.getLogger("memguard")
 
@@ -59,6 +59,10 @@ class MemGuardInterceptor:
     def clear_llm_call(self) -> None:
         self._current_llm_call_id = None
 
+    @staticmethod
+    def _hash_content(value: dict[str, Any] | None) -> str:
+        return hash_content(value)
+
     def record(
         self,
         operation: MemoryOp,
@@ -90,6 +94,9 @@ class MemGuardInterceptor:
         Returns:
             event_id: UUID of the recorded event
         """
+        value_to_hash = after_value if after_value is not None else before_value
+        content_hash = self._hash_content(value_to_hash)
+
         event = MemoryEvent(
             agent_id=agent_id or self.agent_id,
             session_id=self._session_id or "unknown",
@@ -99,6 +106,7 @@ class MemGuardInterceptor:
             memory_type=memory_type,
             before_value=before_value if self.capture_content else None,
             after_value=after_value if self.capture_content else None,
+            content_hash=content_hash,
             caused_by=caused_by,
             llm_call_id=self._current_llm_call_id,
             tags=tags or [],
@@ -111,7 +119,10 @@ class MemGuardInterceptor:
 
         logger.debug(
             "MemGuard event: op=%s key=%s agent=%s session=%s",
-            operation.value, memory_key, self.agent_id, self._session_id
+            operation.value,
+            memory_key,
+            self.agent_id,
+            self._session_id,
         )
 
         return event.event_id
@@ -126,10 +137,11 @@ class MemGuardInterceptor:
         def _send() -> None:
             try:
                 # Call transport.emit synchronously from the thread
-                if hasattr(self.transport, '_emit_sync'):
+                if hasattr(self.transport, "_emit_sync"):
                     self.transport._emit_sync(event)
                 else:
                     import asyncio
+
                     try:
                         asyncio.run(self.transport.emit(event))
                     except RuntimeError:
@@ -139,7 +151,7 @@ class MemGuardInterceptor:
             except Exception:
                 logger.warning(
                     "MemGuard: failed to emit event %s to transport",
-                    getattr(event, 'event_id', '?'),
+                    getattr(event, "event_id", "?"),
                     exc_info=True,
                 )
 
@@ -154,6 +166,8 @@ class MemGuardInterceptor:
         output_text: str = "",
         influence_score: float = 0.0,
         agent_id: str | None = None,
+        user_input: str = "",
+        model: str = "",
         **context: Any,
     ) -> DecisionTrace:
         """
@@ -179,8 +193,18 @@ class MemGuardInterceptor:
             namespace=self.namespace,
             input_event_ids=input_event_ids,
             output_event_ids=output_event_ids,
-            prompt_hash=hashlib.sha256(prompt_text.encode()).hexdigest()[:16] if prompt_text else "",
-            output_hash=hashlib.sha256(output_text.encode()).hexdigest()[:16] if output_text else "",
+            prompt_hash=(
+                hashlib.sha256(prompt_text.encode()).hexdigest()[:16]
+                if prompt_text
+                else ""
+            ),
+            user_input=user_input,
+            model=model,
+            output_hash=(
+                hashlib.sha256(output_text.encode()).hexdigest()[:16]
+                if output_text
+                else ""
+            ),
             output_summary=output_text[:200] if output_text else "",
             memory_influence_score=influence_score,
             context=context,

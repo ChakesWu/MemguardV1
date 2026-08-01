@@ -8,6 +8,7 @@ Every memory operation (create/read/update/delete/search) produces one.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -15,22 +16,38 @@ from typing import Any
 from uuid import uuid4
 
 
+def hash_content(value: dict[str, Any] | None) -> str:
+    """Return a stable privacy-safe hash for structured memory content."""
+    if value is None:
+        return ""
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
 class MemoryOp(str, Enum):
     """Types of memory operations we intercept."""
-    CREATE = "create"    # New memory written
-    READ = "read"        # Memory retrieved by key
-    UPDATE = "update"    # Existing memory modified
-    DELETE = "delete"    # Memory removed
-    QUERY = "query"      # Structured search
-    SEARCH = "search"    # Semantic/vector search
+
+    CREATE = "create"  # New memory written
+    READ = "read"  # Memory retrieved by key
+    UPDATE = "update"  # Existing memory modified
+    DELETE = "delete"  # Memory removed
+    QUERY = "query"  # Structured search
+    SEARCH = "search"  # Semantic/vector search
 
 
 class MemoryType(str, Enum):
     """Cognitive memory taxonomy."""
-    EPISODIC = "episodic"      # Specific past events
-    SEMANTIC = "semantic"      # General facts about user/world
+
+    EPISODIC = "episodic"  # Specific past events
+    SEMANTIC = "semantic"  # General facts about user/world
     PROCEDURAL = "procedural"  # How to do things
-    WORKING = "working"        # Short-term, in-context state
+    WORKING = "working"  # Short-term, in-context state
 
 
 @dataclass
@@ -41,6 +58,7 @@ class MemoryEvent:
     This is the fundamental unit of MemGuard observability.
     Every time an agent reads or writes memory, one of these is produced.
     """
+
     # Identity
     event_id: str = field(default_factory=lambda: str(uuid4()))
     agent_id: str = ""
@@ -48,32 +66,34 @@ class MemoryEvent:
 
     # What happened
     operation: MemoryOp = MemoryOp.CREATE
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     # Memory target
-    memory_key: str = ""           # Logical key / identifier
-    namespace: str = "default"     # Scoping (tenant_id, user_id, etc.)
+    memory_key: str = ""  # Logical key / identifier
+    namespace: str = "default"  # Scoping (tenant_id, user_id, etc.)
     memory_type: MemoryType = MemoryType.WORKING
 
     # Content (privacy-first: hashed by default)
-    before_value: dict | None = None    # State before op (for UPDATE/DELETE)
-    after_value: dict | None = None     # State after op (for CREATE/UPDATE)
-    content_hash: str = ""              # SHA-256 of content
+    before_value: dict | None = None  # State before op (for UPDATE/DELETE)
+    after_value: dict | None = None  # State after op (for CREATE/UPDATE)
+    content_hash: str = ""  # SHA-256 of content
 
     # Causality
-    caused_by: str | None = None        # event_id of upstream event
-    llm_call_id: str | None = None      # Which LLM completion triggered this
+    caused_by: str | None = None  # event_id of upstream event
+    llm_call_id: str | None = None  # Which LLM completion triggered this
 
     # Context
-    context: dict = field(default_factory=dict)    # Framework-specific metadata
+    context: dict = field(default_factory=dict)  # Framework-specific metadata
     tags: list[str] = field(default_factory=list)  # Developer-defined labels
 
     def __post_init__(self):
-        if not self.content_hash and (self.after_value or self.before_value):
-            value = self.after_value or self.before_value or {}
-            self.content_hash = hashlib.sha256(
-                str(sorted(value.items())).encode()
-            ).hexdigest()[:16]
+        if not self.content_hash:
+            value = (
+                self.after_value if self.after_value is not None else self.before_value
+            )
+            self.content_hash = hash_content(value)
 
 
 @dataclass
@@ -84,17 +104,22 @@ class DecisionTrace:
     This is how you answer: "Why did the agent decide that?"
     Trace back from any agent output to the memories that shaped it.
     """
+
     trace_id: str = field(default_factory=lambda: str(uuid4()))
     agent_id: str = ""
     session_id: str = ""
     namespace: str = "default"
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     # Input side: which memories were read
     input_event_ids: list[str] = field(default_factory=list)
 
     # The LLM call
     prompt_hash: str = ""
+    user_input: str = ""
+    model: str = ""
     output_hash: str = ""
     output_summary: str = ""
 
