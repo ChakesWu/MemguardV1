@@ -7,6 +7,7 @@ import {
   outputEvidence,
   traceOutput,
 } from '../lib/dashboard'
+import WhyThisOutput from './WhyThisOutput'
 
 interface EvidenceWorkspaceProps {
   trace: DecisionTrace | null
@@ -42,9 +43,9 @@ export default function EvidenceWorkspace({ trace }: EvidenceWorkspaceProps) {
         <div className="mg-empty-state">
           <p className="mg-eyebrow">No output selected</p>
           <h1>Record an agent output to inspect its evidence.</h1>
-          <p>Run the generic LangGraph demo with an authenticated MemGuard token, then refresh this workspace.</p>
+          <p>Run the deterministic memory demo with an authenticated MemGuard token, then refresh this workspace.</p>
           <code>
-            MEMGUARD_API_TOKEN=&lt;token&gt; MEMGUARD_TENANT_ID=acme-dev python examples/generic_trace_demo.py
+            memguard demo --api-url http://localhost:8000 --api-token &lt;token&gt; --tenant-id acme-dev
           </code>
         </div>
       </main>
@@ -75,14 +76,7 @@ export default function EvidenceWorkspace({ trace }: EvidenceWorkspaceProps) {
         </dl>
       </header>
 
-      <p className="mg-truth-note">
-        Recorded evidence lineage shows what memory and retrieved context were available at generation time. It is not proof of model causality.
-      </p>
-
-      <section className="mg-selected-output" aria-labelledby="mg-selected-output-title">
-        <h2 id="mg-selected-output-title">Selected output</h2>
-        <p>{traceOutput(trace)}</p>
-      </section>
+      <WhyThisOutput trace={trace} />
 
       <div className="mg-section-heading">
         <h2>Evidence lineage</h2>

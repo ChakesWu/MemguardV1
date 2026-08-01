@@ -45,6 +45,40 @@ export interface EvidenceItem {
   metadata?: Record<string, any>
 }
 
+export type ExplanationStatus =
+  | 'observed'
+  | 'stale'
+  | 'conflict'
+  | 'stale_conflict'
+  | 'evidence_gap'
+
+export interface ExplanationFinding {
+  kind: ExplanationStatus
+  event_id: string
+  memory_key: string
+  fact_key?: string
+  remembered_value?: unknown
+  current_value?: unknown
+  source_type?: string
+  source_id?: string
+  retrieval_rank?: number
+  retrieval_score?: number
+  included_in_prompt?: boolean
+  memory_created_at?: string
+  memory_last_verified_at?: string
+  max_age_seconds?: number
+  age_seconds?: number
+}
+
+export interface TraceExplanation {
+  basis: 'recorded_evidence'
+  causality_claim: 'not_proven'
+  status: ExplanationStatus
+  summary: string
+  findings: ExplanationFinding[]
+  missing_evidence_event_ids?: string[]
+}
+
 export interface DecisionTrace {
   trace_id: string
   agent_id: string
@@ -64,6 +98,7 @@ export interface DecisionTrace {
   memory_influence_scores?: Record<string, number>
   metadata?: Record<string, any>
   output_summary?: string
+  explanation?: TraceExplanation
 }
 
 export interface MemoryKeyPresentation {
