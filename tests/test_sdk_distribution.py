@@ -1,5 +1,7 @@
 import pathlib
+import subprocess
 import sys
+import zipfile
 
 import tomli
 
@@ -36,3 +38,34 @@ def test_distribution_registers_cli_and_discovers_all_runtime_packages():
 def test_distribution_contains_pep561_marker_and_no_duplicate_setup_config():
     assert (SDK / "memguard" / "py.typed").is_file()
     assert not (SDK / "setup.py").exists()
+
+
+def test_built_wheel_contains_repository_license(tmp_path):
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--no-isolation",
+            "--outdir",
+            str(tmp_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=SDK,
+    )
+    wheel = next(tmp_path.glob("memguard-*.whl"))
+
+    with zipfile.ZipFile(wheel) as archive:
+        license_names = [
+            name
+            for name in archive.namelist()
+            if name.endswith(".dist-info/licenses/LICENSE")
+        ]
+        assert license_names
+        license_text = archive.read(license_names[0]).decode("utf-8")
+
+    assert "MIT License" in license_text
+    assert "Copyright (c) 2026 Chakes Wu" in license_text
