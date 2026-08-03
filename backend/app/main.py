@@ -16,8 +16,10 @@ from .schemas import (
 from .services import MemoryGateway
 from .audit import AuditReportGenerator, export_to_markdown
 from .auth import AuthenticationError, TenantAccessError, authenticate_bearer_token, enforce_tenant
+from .agent_proxy import router as agent_proxy_router
 
 app = FastAPI(title="MemGuard v1", version="0.1.0")
+app.include_router(agent_proxy_router)
 
 # Allow frontend and SDK to connect
 app.add_middleware(
