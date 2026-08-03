@@ -25,6 +25,27 @@ services:
       timeout: 5s
       retries: 10
 
+  agent-server:
+    build:
+      context: ./agent-server
+    environment:
+      DATABASE_URL: postgresql://memguard:memguard@postgres:5432/memguard
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-memguard-customer-support-baseline}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "2024"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:2024/info')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -34,11 +55,14 @@ services:
       MEMGUARD_OIDC_JWKS_URL: http://keycloak:8080/realms/memguard/protocol/openid-connect/certs
       MEMGUARD_OIDC_AUDIENCE: memguard-api
       MEMGUARD_CORS_ORIGINS: http://localhost:3001
+      LANGGRAPH_AGENT_URL: http://agent-server:2024
     depends_on:
       postgres:
         condition: service_healthy
       keycloak:
         condition: service_started
+      agent-server:
+        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
