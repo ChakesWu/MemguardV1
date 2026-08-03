@@ -1,5 +1,6 @@
 import pathlib
 import sys
+from uuid import UUID
 
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -29,9 +30,7 @@ def test_agent_proxy_overwrites_browser_supplied_identity() -> None:
 
     secured = inject_trusted_agent_context(payload, principal)
 
-    assert secured["config"]["configurable"]["tenant_id"] == "acme-dev"
-    assert secured["config"]["configurable"]["actor_id"] == "keycloak-user-123"
-    assert secured["config"]["configurable"]["ui_mode"] == "chat"
+    assert "config" not in secured
     assert secured["context"] == {"tenant_id": "acme-dev", "actor_id": "keycloak-user-123"}
 
 
@@ -49,6 +48,7 @@ def test_agent_proxy_generates_thread_ids_owned_by_the_token_tenant() -> None:
     other = TenantPrincipal(subject="user-2", tenant_id="other-tenant", claims={})
     thread_id = create_tenant_thread_id(acme)
 
+    UUID(thread_id)
     assert is_allowed_thread_path(f"threads/{thread_id}/history", acme)
     assert not is_allowed_thread_path(f"threads/{thread_id}/history", other)
 

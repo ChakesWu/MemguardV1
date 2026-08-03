@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator
 from copy import deepcopy
 from re import fullmatch
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -23,23 +23,30 @@ _HOP_BY_HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-
 
 
 def inject_trusted_agent_context(payload: dict[str, Any], principal: TenantPrincipal) -> dict[str, Any]:
-    """Return a copy with Keycloak identity replacing all browser-supplied agent identity."""
+    """Return a copy with trusted LangGraph context replacing browser identity."""
     secured = deepcopy(payload)
     config = secured.get("config") if isinstance(secured.get("config"), dict) else {}
-    configurable = config.get("configurable") if isinstance(config.get("configurable"), dict) else {}
-    configurable = {**configurable, "tenant_id": principal.tenant_id, "actor_id": principal.subject}
-    secured["config"] = {**config, "configurable": configurable}
+    # LangGraph 0.6+ rejects requests that include both configurable and
+    # context. Context is the supported, server-authoritative identity path.
+    config = {key: value for key, value in config.items() if key != "configurable"}
+    if config:
+        secured["config"] = config
+    else:
+        secured.pop("config", None)
     secured["context"] = {"tenant_id": principal.tenant_id, "actor_id": principal.subject}
     return secured
 
 
 def _tenant_thread_prefix(principal: TenantPrincipal) -> str:
-    """Return a non-guessable-looking, tenant-specific prefix for Agent Server thread IDs."""
-    return f"mg-{sha256(principal.tenant_id.encode()).hexdigest()[:16]}-"
+    """Return the tenant-bound hexadecimal prefix embedded in a UUID thread ID."""
+    return sha256(principal.tenant_id.encode()).hexdigest()[:16]
 
 
 def create_tenant_thread_id(principal: TenantPrincipal) -> str:
-    return f"{_tenant_thread_prefix(principal)}{uuid4()}"
+    # LangGraph validates thread IDs as UUIDs. Keep the first 64 bits bound to
+    # the tenant, while retaining 64 random bits so every conversation is unique.
+    raw_uuid = _tenant_thread_prefix(principal) + uuid4().hex[16:]
+    return str(UUID(raw_uuid))
 
 
 def is_allowed_thread_path(path: str, principal: TenantPrincipal) -> bool:
@@ -51,7 +58,9 @@ def is_allowed_thread_path(path: str, principal: TenantPrincipal) -> bool:
         return True
     thread_id = segments[1]
     prefix = _tenant_thread_prefix(principal)
-    if not fullmatch(rf"{prefix}[0-9a-f]{{8}}-[0-9a-f]{{4}}-[0-9a-f]{{4}}-[0-9a-f]{{4}}-[0-9a-f]{{12}}", thread_id):
+    if not fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", thread_id):
+        return False
+    if not thread_id.replace("-", "").startswith(prefix):
         return False
     return tuple(segments[2:]) in {
         (),

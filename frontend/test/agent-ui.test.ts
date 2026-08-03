@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { parseApprovalInterrupt, messageText } from '../lib/agent-ui'
 
@@ -21,5 +23,11 @@ describe('agent UI helpers', () => {
   it('renders text from either string or structured LangChain message content', () => {
     expect(messageText('A refund needs review.')).toBe('A refund needs review.')
     expect(messageText([{ type: 'text', text: 'Current policy applies.' }])).toBe('Current policy applies.')
+  })
+
+  it('does not subscribe to the unsupported legacy tools stream mode', () => {
+    const chatSource = readFileSync(join(process.cwd(), 'components/agent/SupportAgentChat.tsx'), 'utf8')
+
+    expect(chatSource).not.toContain('stream.toolProgress')
   })
 })

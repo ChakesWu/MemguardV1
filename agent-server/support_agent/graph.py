@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from langchain.agents import create_agent
 from langchain_deepseek import ChatDeepSeek
-from langgraph.checkpoint.memory import InMemorySaver
 
 from .config import SupportAgentSettings, configure_langsmith
 from .repository import SupportRepository
@@ -39,7 +38,7 @@ issued unless the tool reports a completed approved action.
 def build_customer_support_agent(
     *, settings: SupportAgentSettings, repository: SupportRepository | None = None
 ):
-    """Compile the DeepSeek agent with local thread checkpoints and approval-gated tools."""
+    """Compile the DeepSeek agent with runtime-managed persistence and approval-gated tools."""
     configure_langsmith(settings)
     repository = repository or SupportRepository(settings.database_url)
     repository.migrate()
@@ -55,7 +54,6 @@ def build_customer_support_agent(
         tools=build_support_tools(repository),
         system_prompt=SYSTEM_PROMPT,
         context_schema=SupportAgentContext,
-        checkpointer=InMemorySaver(),
         name="customer_support_agent",
     )
 

@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
 
-import { AGENT_SERVER_API_URL, CUSTOMER_SUPPORT_ASSISTANT_ID, agentClientOptions } from '../../lib/agent-client'
+import { CUSTOMER_SUPPORT_ASSISTANT_ID, CUSTOMER_SUPPORT_STREAM_MODES, agentClientOptions } from '../../lib/agent-client'
 import { messageText, parseApprovalInterrupt } from '../../lib/agent-ui'
 
 type SupportAgentChatProps = {
@@ -16,7 +16,6 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
   const [threadId, setThreadId] = useState<string | null>(null)
   const stream = useStream({
     ...agentClientOptions(accessToken),
-    apiUrl: AGENT_SERVER_API_URL,
     assistantId: CUSTOMER_SUPPORT_ASSISTANT_ID,
     threadId,
     onThreadId: setThreadId,
@@ -31,7 +30,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
     setDraft('')
     await stream.submit(
       { messages: [{ type: 'human', content: text }] },
-      { streamMode: ['values', 'tools'], streamResumable: true },
+      { streamMode: CUSTOMER_SUPPORT_STREAM_MODES, streamResumable: true },
     )
   }
 
@@ -39,7 +38,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
     if (stream.isLoading) return
     await stream.submit(null, {
       command: { resume: { decision } },
-      streamMode: ['values', 'tools'],
+      streamMode: CUSTOMER_SUPPORT_STREAM_MODES,
       streamResumable: true,
     })
   }
@@ -99,13 +98,6 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
                 </article>
               )
             })}
-            {stream.toolProgress.map((tool) => (
-              <div className="mg-agent-tool" key={tool.toolCallId || tool.name}>
-                <span className="mg-agent-tool__dot" />
-                <span>{tool.name.replaceAll('_', ' ')}</span>
-                <small>{tool.state}</small>
-              </div>
-            ))}
             {stream.isLoading && <div className="mg-agent-thinking"><span className="mg-loading-line" /> The agent is checking the available evidence…</div>}
             {Boolean(stream.error) && <p className="mg-agent-error">{stream.error instanceof Error ? stream.error.message : 'The agent request could not be completed.'}</p>}
           </div>
