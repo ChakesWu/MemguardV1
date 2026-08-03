@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+from hashlib import sha256
 from collections.abc import AsyncIterator
 from copy import deepcopy
+from re import fullmatch
 from typing import Any
+from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -30,6 +33,42 @@ def inject_trusted_agent_context(payload: dict[str, Any], principal: TenantPrinc
     return secured
 
 
+def _tenant_thread_prefix(principal: TenantPrincipal) -> str:
+    """Return a non-guessable-looking, tenant-specific prefix for Agent Server thread IDs."""
+    return f"mg-{sha256(principal.tenant_id.encode()).hexdigest()[:16]}-"
+
+
+def create_tenant_thread_id(principal: TenantPrincipal) -> str:
+    return f"{_tenant_thread_prefix(principal)}{uuid4()}"
+
+
+def is_allowed_thread_path(path: str, principal: TenantPrincipal) -> bool:
+    """Only permit exact, tenant-owned thread routes used by the Agent Chat UI."""
+    segments = [segment for segment in path.split("/") if segment]
+    if not segments or segments[0] != "threads":
+        return False
+    if len(segments) == 1:
+        return True
+    thread_id = segments[1]
+    prefix = _tenant_thread_prefix(principal)
+    if not fullmatch(rf"{prefix}[0-9a-f]{{8}}-[0-9a-f]{{4}}-[0-9a-f]{{4}}-[0-9a-f]{{4}}-[0-9a-f]{{12}}", thread_id):
+        return False
+    return tuple(segments[2:]) in {
+        (),
+        ("state",),
+        ("history",),
+        ("runs", "stream"),
+    }
+
+
+def _create_thread_payload(payload: dict[str, Any], principal: TenantPrincipal) -> dict[str, Any]:
+    secured = deepcopy(payload)
+    metadata = secured.get("metadata") if isinstance(secured.get("metadata"), dict) else {}
+    secured["thread_id"] = create_tenant_thread_id(principal)
+    secured["metadata"] = {**metadata, "tenant_id": principal.tenant_id, "actor_id": principal.subject}
+    return secured
+
+
 def _upstream_url(path: str, query: str) -> str:
     base_url = os.getenv("LANGGRAPH_AGENT_URL", "http://agent-server:2024").rstrip("/")
     suffix = f"/{path}" if path else ""
@@ -48,6 +87,8 @@ def _proxy_request_headers(request: Request) -> dict[str, str]:
 async def proxy_agent_server(path: str, request: Request) -> StreamingResponse:
     """Forward Agent Server protocol requests while preserving SSE streams."""
     principal: TenantPrincipal = request.state.principal
+    if not is_allowed_thread_path(path, principal) or (path == "threads" and request.method != "POST"):
+        raise HTTPException(status_code=404, detail="Agent resource not found")
     body = await request.body()
     content = body
     if body and "application/json" in request.headers.get("content-type", ""):
@@ -56,7 +97,8 @@ async def proxy_agent_server(path: str, request: Request) -> StreamingResponse:
         except json.JSONDecodeError:
             payload = None
         if isinstance(payload, dict):
-            content = json.dumps(inject_trusted_agent_context(payload, principal)).encode()
+            secured_payload = _create_thread_payload(payload, principal) if path == "threads" else inject_trusted_agent_context(payload, principal)
+            content = json.dumps(secured_payload).encode()
 
     client = httpx.AsyncClient(timeout=None)
     try:
