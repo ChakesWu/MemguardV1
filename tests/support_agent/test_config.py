@@ -38,3 +38,9 @@ def test_settings_default_to_deepseek_v4_flash(monkeypatch):
     from support_agent.config import SupportAgentSettings
 
     assert SupportAgentSettings.from_env().deepseek_model == "deepseek-v4-flash"
+
+
+def test_requirements_use_current_deepseek_integration_major_version():
+    requirements = (PROJECT_ROOT / "agent-server" / "requirements.txt").read_text()
+
+    assert "langchain-deepseek>=1,<2" in requirements
