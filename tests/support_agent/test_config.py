@@ -44,3 +44,22 @@ def test_requirements_use_current_deepseek_integration_major_version():
     requirements = (PROJECT_ROOT / "agent-server" / "requirements.txt").read_text()
 
     assert "langchain-deepseek>=1,<2" in requirements
+
+
+def test_langsmith_environment_is_configured_only_on_the_server(monkeypatch):
+    from support_agent.config import SupportAgentSettings, configure_langsmith
+
+    settings = SupportAgentSettings(
+        database_url="sqlite:///support.db",
+        deepseek_api_key="deepseek-test-key",
+        deepseek_model="deepseek-v4-flash",
+        langsmith_tracing=True,
+        langsmith_api_key="langsmith-test-key",
+        langsmith_project="support-agent-test",
+    )
+
+    configure_langsmith(settings)
+
+    assert "LANGSMITH_API_KEY" not in settings.__dict__ or settings.langsmith_api_key == "langsmith-test-key"
+    assert __import__("os").environ["LANGSMITH_TRACING"] == "true"
+    assert __import__("os").environ["LANGSMITH_PROJECT"] == "support-agent-test"

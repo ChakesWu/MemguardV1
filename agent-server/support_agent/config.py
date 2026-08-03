@@ -45,3 +45,14 @@ class SupportAgentSettings:
             langsmith_api_key=langsmith_api_key,
             langsmith_project=os.getenv("LANGSMITH_PROJECT", "memguard-customer-support-baseline"),
         )
+
+
+def configure_langsmith(settings: SupportAgentSettings) -> None:
+    """Configure optional server-side LangSmith tracing without exposing secrets to the UI."""
+    if not settings.langsmith_tracing:
+        return
+    if not settings.langsmith_api_key:
+        raise ValueError("LANGSMITH_API_KEY is required when LangSmith tracing is enabled")
+    os.environ["LANGSMITH_TRACING"] = "true"
+    os.environ["LANGSMITH_API_KEY"] = settings.langsmith_api_key
+    os.environ["LANGSMITH_PROJECT"] = settings.langsmith_project
