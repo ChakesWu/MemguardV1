@@ -105,6 +105,36 @@ class SupportRepository:
             row = self._execute(connection, "SELECT * FROM support_memories WHERE tenant_id = ? AND version_id = ?", (tenant_id, version_id)).fetchone()
         return self._memory_from_row(row) if row else None
 
+    def get_active_policy(self, tenant_id: str, document_id: str) -> PolicyDocument | None:
+        with self._connection() as connection:
+            row = self._execute(
+                connection,
+                "SELECT * FROM support_policies WHERE tenant_id = ? AND document_id = ? AND status = ? ORDER BY effective_from DESC LIMIT 1",
+                (tenant_id, document_id, "active"),
+            ).fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        return PolicyDocument(
+            tenant_id=data["tenant_id"],
+            document_id=data["document_id"],
+            version=data["version"],
+            effective_from=_timestamp(data["effective_from"]),
+            policy=json.loads(data["policy_json"]),
+            status=data["status"],
+        )
+
+    def memories_for_owner(self, tenant_id: str, owner_id: str, kind: str | None = None) -> list[MemoryRecord]:
+        statement = "SELECT * FROM support_memories WHERE tenant_id = ? AND owner_id = ?"
+        params: tuple[Any, ...] = (tenant_id, owner_id)
+        if kind:
+            statement += " AND kind = ?"
+            params += (kind,)
+        statement += " ORDER BY valid_from DESC"
+        with self._connection() as connection:
+            rows = self._execute(connection, statement, params).fetchall()
+        return [self._memory_from_row(row) for row in rows]
+
     def write_memory(self, *, tenant_id: str, owner_id: str, kind: str, value: dict[str, Any] | str, source_type: str, source_id: str | None = None, supersedes_version_id: str | None = None) -> MemoryRecord:
         memory_id = str(uuid4())
         if supersedes_version_id:
