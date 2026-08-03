@@ -141,6 +141,7 @@ export default function DashboardPage() {
           <span className={`mg-connection${stats ? ' is-connected' : ''}`}>
             {stats ? `Connected · ${stats.database_driver || stats.db_path || 'database'}` : 'Backend unavailable'}
           </span>
+          <a className="mg-button" href="/agent">Support agent</a>
           {conflicts.length > 0 && (
             <button type="button" className="mg-button mg-button--warning" onClick={() => setShowConflicts(true)}>
               {conflicts.length} conflict{conflicts.length === 1 ? '' : 's'}
