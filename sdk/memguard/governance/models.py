@@ -172,3 +172,63 @@ class PromptGateResult:
     prompt: str
     included_memory_ids: Tuple[str, ...]
     blocked_memory_ids: Tuple[str, ...]
+
+
+class OutputEvidenceRole(str, Enum):
+    FACTUAL_SUPPORT = "factual_support"
+    CONSTRAINT = "constraint"
+    PREFERENCE = "preference"
+    BACKGROUND_CONTEXT = "background_context"
+
+
+@dataclass(frozen=True)
+class OutputCitation:
+    start_offset: int
+    end_offset: int
+    segment: str
+    memory_id: str
+    evidence_quote: str
+    role: OutputEvidenceRole | str
+
+
+@dataclass(frozen=True)
+class ValidatedEvidenceLink:
+    start_offset: int
+    end_offset: int
+    segment: str
+    memory_id: str
+    evidence_quote: str
+    role: OutputEvidenceRole
+    retrieval: RetrievalSignals
+    trust: TrustResult
+    policy: PolicyDecision
+    influence: InfluenceResult
+    prompt_included: bool = True
+    link_method: str = "explicit_citation"
+    validation_status: str = "valid"
+
+
+@dataclass(frozen=True)
+class InvalidEvidenceCitation:
+    start_offset: int
+    end_offset: int
+    segment: str
+    memory_id: str
+    role: str
+    reason_codes: Tuple[str, ...]
+    validation_status: str = "invalid"
+
+
+@dataclass(frozen=True)
+class EvidenceGap:
+    start_offset: int
+    end_offset: int
+    segment: str
+
+
+@dataclass(frozen=True)
+class OutputEvidenceResult:
+    answer: str
+    valid_links: Tuple[ValidatedEvidenceLink, ...]
+    invalid_citations: Tuple[InvalidEvidenceCitation, ...]
+    evidence_gaps: Tuple[EvidenceGap, ...]
