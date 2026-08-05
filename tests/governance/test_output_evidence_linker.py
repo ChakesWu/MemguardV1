@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+
+import pytest
 
 from memguard.governance import (
     ConflictStatus,
@@ -51,8 +54,17 @@ def governance_run():
         data_classification=DataClassification.SECRET,
         retrieval=RetrievalSignals(similarity=0.9, retrieved=True),
     )
+    blocked = MemoryEvidence(
+        memory_id="private-1",
+        tenant_id="acme",
+        content="Employee phone: 555-0108",
+        source_type="crm",
+        writer_id="crm-sync",
+        data_classification=DataClassification.PRIVATE_EMPLOYEE,
+        retrieval=RetrievalSignals(similarity=0.9, retrieved=True),
+    )
     return MemoryGovernanceEngine(policy).evaluate_and_build_prompt(
-        "When does Northstar renew?", (allowed, quarantined), context
+        "When does Northstar renew?", (allowed, quarantined, blocked), context
     )
 
 
@@ -81,3 +93,34 @@ def test_links_exact_answer_segment_to_prompt_included_memory():
     assert link.prompt_included is True
     assert link.trust.level is TrustLevel.HIGH
     assert link.policy.action is PolicyAction.ALLOW
+
+
+@pytest.mark.parametrize(
+    ("citation", "reason"),
+    [
+        (OutputCitation(-1, 5, "North", "crm-104", "Renewal date", "factual_support"), "segment:invalid_offsets"),
+        (OutputCitation(0, 5, "South", "crm-104", "Renewal date", "factual_support"), "segment:mismatch"),
+        (OutputCitation(0, 5, "North", "missing", "Renewal date", "factual_support"), "memory:unknown"),
+        (OutputCitation(0, 5, "North", "secret-1", "secret-token-value", "factual_support"), "policy:memory_not_eligible"),
+        (OutputCitation(0, 5, "North", "private-1", "555-0108", "factual_support"), "policy:memory_not_eligible"),
+        (OutputCitation(0, 5, "North", "crm-104", "not in memory", "factual_support"), "evidence:quote_not_found"),
+        (OutputCitation(0, 5, "North", "crm-104", "Renewal date", "unsupported"), "role:unsupported"),
+    ],
+)
+def test_rejects_citations_that_are_not_safe_evidence_links(citation, reason):
+    result = OutputEvidenceLinker().link(governance_run(), "North", (citation,))
+
+    assert result.valid_links == ()
+    assert reason in result.invalid_citations[0].reason_codes
+    assert not hasattr(result.invalid_citations[0], "evidence_quote")
+
+
+def test_rejects_memory_that_was_not_included_in_the_prompt():
+    run = governance_run()
+    run = replace(run, gate=replace(run.gate, included_memory_ids=()))
+    citation = OutputCitation(0, 5, "North", "crm-104", "Renewal date", "factual_support")
+
+    result = OutputEvidenceLinker().link(run, "North", (citation,))
+
+    assert result.valid_links == ()
+    assert result.invalid_citations[0].reason_codes == ("memory:not_prompt_included",)

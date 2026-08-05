@@ -10,6 +10,7 @@ from .models import (
     OutputCitation,
     OutputEvidenceResult,
     OutputEvidenceRole,
+    PolicyAction,
     ValidatedEvidenceLink,
 )
 
@@ -55,7 +56,36 @@ class OutputEvidenceLinker:
         answer: str,
         citation: OutputCitation,
     ) -> Tuple[str, ...]:
-        return ()
+        reasons = []
+        offsets_valid = 0 <= citation.start_offset < citation.end_offset <= len(answer)
+        if not offsets_valid:
+            reasons.append("segment:invalid_offsets")
+        elif answer[citation.start_offset : citation.end_offset] != citation.segment:
+            reasons.append("segment:mismatch")
+
+        try:
+            evaluation = run.by_id(citation.memory_id)
+        except StopIteration:
+            reasons.append("memory:unknown")
+            evaluation = None
+
+        if evaluation is not None:
+            if evaluation.policy.action in {PolicyAction.BLOCK, PolicyAction.QUARANTINE}:
+                reasons.append("policy:memory_not_eligible")
+            elif citation.memory_id not in run.gate.included_memory_ids or not evaluation.influence.included_in_prompt:
+                reasons.append("memory:not_prompt_included")
+            if (
+                not citation.evidence_quote
+                or not evaluation.evidence.content
+                or citation.evidence_quote not in evaluation.evidence.content
+            ):
+                reasons.append("evidence:quote_not_found")
+
+        try:
+            OutputEvidenceRole(citation.role)
+        except ValueError:
+            reasons.append("role:unsupported")
+        return tuple(reasons)
 
     def _invalid(
         self,
