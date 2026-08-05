@@ -101,9 +101,28 @@ class OutputEvidenceLinker:
             reason_codes=reason_codes,
         )
 
+    @staticmethod
     def _gaps(
-        self,
         answer: str,
         links: Tuple[ValidatedEvidenceLink, ...],
     ) -> Tuple[EvidenceGap, ...]:
-        return ()
+        merged = []
+        for start, end in sorted((link.start_offset, link.end_offset) for link in links):
+            if merged and start <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+            else:
+                merged.append((start, end))
+
+        gaps = []
+        cursor = 0
+        for start, end in (*merged, (len(answer), len(answer))):
+            raw_start, raw_end = cursor, start
+            while raw_start < raw_end and answer[raw_start].isspace():
+                raw_start += 1
+            while raw_end > raw_start and answer[raw_end - 1].isspace():
+                raw_end -= 1
+            segment = answer[raw_start:raw_end]
+            if any(character.isalnum() for character in segment):
+                gaps.append(EvidenceGap(raw_start, raw_end, segment))
+            cursor = max(cursor, end)
+        return tuple(gaps)

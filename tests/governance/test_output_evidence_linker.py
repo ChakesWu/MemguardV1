@@ -16,14 +16,14 @@ from memguard.governance import (
     RetrievalSignals,
     TrustLevel,
 )
-from memguard.governance.models import OutputCitation, OutputEvidenceRole
+from memguard.governance.models import EvidenceGap, OutputCitation, OutputEvidenceRole
 from memguard.governance.output import OutputEvidenceLinker
 
 
 NOW = datetime(2026, 8, 5, tzinfo=timezone.utc)
 
 
-def governance_run():
+def governance_run(*, include_second_allowed: bool = False):
     policy = GovernancePolicy(
         policy_id="governance-v1",
         source_scores={"crm": 100},
@@ -63,8 +63,11 @@ def governance_run():
         data_classification=DataClassification.PRIVATE_EMPLOYEE,
         retrieval=RetrievalSignals(similarity=0.9, retrieved=True),
     )
+    memories = [allowed, quarantined, blocked]
+    if include_second_allowed:
+        memories.append(replace(allowed, memory_id="crm-105"))
     return MemoryGovernanceEngine(policy).evaluate_and_build_prompt(
-        "When does Northstar renew?", (allowed, quarantined, blocked), context
+        "When does Northstar renew?", memories, context
     )
 
 
@@ -124,3 +127,59 @@ def test_rejects_memory_that_was_not_included_in_the_prompt():
 
     assert result.valid_links == ()
     assert result.invalid_citations[0].reason_codes == ("memory:not_prompt_included",)
+
+
+def test_offsets_disambiguate_repeated_answer_text():
+    answer = "Renew in October. Renew in October."
+    second = answer.rindex("Renew")
+
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        answer,
+        (
+            OutputCitation(
+                second,
+                len(answer),
+                answer[second:],
+                "crm-104",
+                "Renewal date: October",
+                "factual_support",
+            ),
+        ),
+    )
+
+    assert result.valid_links[0].start_offset == second
+    assert result.evidence_gaps == (EvidenceGap(0, 17, "Renew in October."),)
+
+
+def test_multiple_memories_can_support_the_same_answer_segment():
+    answer = "North"
+    result = OutputEvidenceLinker().link(
+        governance_run(include_second_allowed=True),
+        answer,
+        (
+            OutputCitation(0, 5, answer, "crm-104", "Renewal date: October", "factual_support"),
+            OutputCitation(0, 5, answer, "crm-105", "Renewal date: October", "factual_support"),
+        ),
+    )
+
+    assert tuple(link.memory_id for link in result.valid_links) == ("crm-104", "crm-105")
+    assert result.evidence_gaps == ()
+
+
+def test_uncited_answer_has_one_evidence_gap_and_no_link():
+    result = OutputEvidenceLinker().link(governance_run(), "Unsupported answer.", ())
+
+    assert result.valid_links == ()
+    assert result.evidence_gaps == (EvidenceGap(0, 19, "Unsupported answer."),)
+
+
+def test_partial_citation_leaves_the_remaining_words_as_an_evidence_gap():
+    answer = "North needs renewal details."
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        (answer),
+        (OutputCitation(0, 5, "North", "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    assert result.evidence_gaps == (EvidenceGap(6, 28, "needs renewal details."),)
