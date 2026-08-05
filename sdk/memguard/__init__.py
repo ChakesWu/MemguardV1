@@ -19,6 +19,9 @@ from memguard.governance import (
     GovernancePolicy,
     MemoryEvidence,
     MemoryGovernanceEngine,
+    OutputCitation,
+    OutputEvidenceResult,
+    OutputEvidenceRole,
     PolicyAction,
 )
 
@@ -35,6 +38,9 @@ __all__ = [
     "GovernancePolicy",
     "MemoryEvidence",
     "MemoryGovernanceEngine",
+    "OutputCitation",
+    "OutputEvidenceResult",
+    "OutputEvidenceRole",
     "PolicyAction",
     # LLM config
     "LLMConfig",

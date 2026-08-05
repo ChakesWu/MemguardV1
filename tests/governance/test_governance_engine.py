@@ -12,12 +12,18 @@ from memguard.governance import (
     PolicyAction,
     RetrievalSignals,
 )
+from memguard.governance.models import OutputCitation, OutputEvidenceResult
 
 
 def test_engine_is_exposed_from_the_sdk_public_api():
-    from memguard import MemoryGovernanceEngine as PublicEngine
+    import memguard
+    import memguard.governance
 
-    assert PublicEngine is MemoryGovernanceEngine
+    assert memguard.MemoryGovernanceEngine is MemoryGovernanceEngine
+    assert memguard.OutputCitation is OutputCitation
+    assert memguard.OutputEvidenceResult is OutputEvidenceResult
+    assert memguard.governance.OutputCitation is OutputCitation
+    assert memguard.governance.OutputEvidenceResult is OutputEvidenceResult
 
 
 NOW = datetime(2026, 8, 5, tzinfo=timezone.utc)
@@ -78,3 +84,22 @@ def test_engine_blocks_cross_tenant_evidence_before_prompt():
     assert run.gate.blocked_memory_ids == ("foreign",)
     assert "Another tenant" not in run.gate.prompt
     assert run.by_id("foreign").policy.reason_codes == ("tenant:mismatch",)
+
+
+def test_engine_links_explicit_output_evidence():
+    engine = MemoryGovernanceEngine(POLICY)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (item("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    answer = "Northstar renews in October."
+
+    result = engine.link_output_evidence(
+        run,
+        answer=answer,
+        citations=(OutputCitation(0, len(answer), answer, "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    assert result.valid_links[0].memory_id == "crm-104"
+    assert result.evidence_gaps == ()

@@ -12,9 +12,12 @@ from .models import (
     GovernanceContext,
     GovernancePolicy,
     MemoryEvidence,
+    OutputCitation,
+    OutputEvidenceResult,
     PolicyAction,
     PromptGateResult,
 )
+from .output import OutputEvidenceLinker
 from .policy import PolicyEngine
 from .report import EvidenceReport, EvidenceReportBuilder
 from .trust import TrustEngine
@@ -38,6 +41,7 @@ class MemoryGovernanceEngine:
         self.influence_engine = InfluenceEngine()
         self.prompt_gate = PromptGate()
         self.report_builder = EvidenceReportBuilder(capture_allowed_content)
+        self.output_evidence_linker = OutputEvidenceLinker()
 
     def evaluate_and_build_prompt(
         self,
@@ -60,3 +64,12 @@ class MemoryGovernanceEngine:
         gate = self.prompt_gate.build(user_input, items)
         report = self.report_builder.build(self.policy.policy_id, context.tenant_id, context.evaluated_at, items)
         return GovernanceRun(items, gate, report)
+
+    def link_output_evidence(
+        self,
+        run: GovernanceRun,
+        *,
+        answer: str,
+        citations: Iterable[OutputCitation],
+    ) -> OutputEvidenceResult:
+        return self.output_evidence_linker.link(run, answer, citations)

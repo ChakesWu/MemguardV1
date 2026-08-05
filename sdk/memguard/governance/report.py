@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable, Mapping, Tuple
 
-from .models import DataClassification, EvidenceEvaluation, PolicyAction, TrustFactor
+from .models import DataClassification, EvidenceEvaluation, OutputEvidenceResult, PolicyAction, TrustFactor
 
 
 @dataclass(frozen=True)
@@ -18,14 +18,109 @@ class EvidenceReport:
     generated_at: datetime
     items: Tuple[Mapping[str, Any], ...]
 
-    def to_dict(self) -> dict:
+    def to_dict(self, output_evidence: OutputEvidenceResult | None = None) -> dict:
         counts = Counter(str(item["policy"]["action"]) for item in self.items)
-        return {
+        payload = {
             "policy_id": self.policy_id,
             "tenant_id": self.tenant_id,
             "generated_at": self.generated_at.isoformat(),
             "summary": dict(counts),
             "items": deepcopy(list(self.items)),
+        }
+        if output_evidence is not None:
+            payload["output_evidence"] = self._output_evidence(output_evidence)
+        return payload
+
+    def _output_evidence(self, result: OutputEvidenceResult) -> dict:
+        memory_items = {item["memory_id"]: item for item in self.items}
+        valid_links = []
+        for link in result.valid_links:
+            memory_item = memory_items[link.memory_id]
+            quote = "[redacted]" if memory_item["content"] == "[redacted]" else link.evidence_quote
+            valid_links.append(
+                {
+                    "start_offset": link.start_offset,
+                    "end_offset": link.end_offset,
+                    "segment": link.segment,
+                    "memory_id": link.memory_id,
+                    "evidence_quote": quote,
+                    "role": link.role.value,
+                    "retrieval": {
+                        "similarity": link.retrieval.similarity,
+                        "importance": link.retrieval.importance,
+                        "recency": link.retrieval.recency,
+                        "retrieval_score": link.retrieval.retrieval_score,
+                        "confidence_level": link.retrieval.confidence_level,
+                        "retrieved": link.retrieval.retrieved,
+                        "included_in_prompt": link.retrieval.included_in_prompt,
+                        "cited": link.retrieval.cited,
+                    },
+                    "trust": self._trust(link.trust),
+                    "policy": self._policy(link.policy),
+                    "influence": {
+                        "score": link.influence.score,
+                        "retrieved": link.influence.retrieved,
+                        "included_in_prompt": link.influence.included_in_prompt,
+                        "cited": link.influence.cited,
+                        "output_supported": link.influence.output_supported,
+                        "reason_codes": list(link.influence.reason_codes),
+                    },
+                    "prompt_included": link.prompt_included,
+                    "link_method": link.link_method,
+                    "validation_status": link.validation_status,
+                }
+            )
+        invalid_citations = [
+            {
+                "start_offset": citation.start_offset,
+                "end_offset": citation.end_offset,
+                "segment": citation.segment,
+                "memory_id": citation.memory_id,
+                "role": citation.role,
+                "reason_codes": list(citation.reason_codes),
+                "validation_status": citation.validation_status,
+            }
+            for citation in result.invalid_citations
+        ]
+        evidence_gaps = [
+            {"start_offset": gap.start_offset, "end_offset": gap.end_offset, "segment": gap.segment}
+            for gap in result.evidence_gaps
+        ]
+        return {
+            "summary": {
+                "valid_links": len(valid_links),
+                "invalid_citations": len(invalid_citations),
+                "evidence_gaps": len(evidence_gaps),
+            },
+            "valid_links": valid_links,
+            "invalid_citations": invalid_citations,
+            "evidence_gaps": evidence_gaps,
+        }
+
+    @staticmethod
+    def _trust(trust) -> dict:
+        factors = trust.factors
+        return {
+            "score": trust.score,
+            "level": trust.level.value,
+            "missing_factors": list(trust.missing_factors),
+            "reason_codes": list(trust.reason_codes),
+            "factors": {
+                "source": EvidenceReportBuilder._factor(factors.source),
+                "writer": EvidenceReportBuilder._factor(factors.writer),
+                "freshness": EvidenceReportBuilder._factor(factors.freshness),
+                "conflict": EvidenceReportBuilder._factor(factors.conflict),
+                "policy_fit": EvidenceReportBuilder._factor(factors.policy_fit),
+            },
+        }
+
+    @staticmethod
+    def _policy(policy) -> dict:
+        return {
+            "action": policy.action.value,
+            "enforced": policy.enforced,
+            "reason_codes": list(policy.reason_codes),
+            "explanation": policy.explanation,
         }
 
 

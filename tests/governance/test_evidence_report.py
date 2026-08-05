@@ -4,11 +4,16 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from memguard.governance import (
+    ConflictStatus,
     DataClassification,
     EvidenceEvaluation,
     EvidenceReportBuilder,
     InfluenceResult,
     MemoryEvidence,
+    MemoryGovernanceEngine,
+    GovernanceContext,
+    GovernancePolicy,
+    RetrievalSignals,
     PolicyAction,
     PolicyDecision,
     TrustFactor,
@@ -16,9 +21,35 @@ from memguard.governance import (
     TrustLevel,
     TrustResult,
 )
+from memguard.governance.models import OutputCitation
 
 
 NOW = datetime(2026, 8, 5, tzinfo=timezone.utc)
+
+
+POLICY = GovernancePolicy(
+    policy_id="governance-v1",
+    source_scores={"crm": 100},
+    writer_scores={"crm-sync": 100},
+    max_age_days={"crm": 365},
+)
+CONTEXT = GovernanceContext("acme", "support-agent", "customer_support", NOW)
+
+
+def governed_memory(memory_id: str, content: str, *, classification=DataClassification.INTERNAL) -> MemoryEvidence:
+    return MemoryEvidence(
+        memory_id=memory_id,
+        tenant_id="acme",
+        content=content,
+        source_type="crm",
+        writer_id="crm-sync",
+        created_at=NOW,
+        verified_at=NOW,
+        conflict_status=ConflictStatus.NONE,
+        data_classification=classification,
+        allowed_purposes=("customer_support",),
+        retrieval=RetrievalSignals(similarity=0.9, retrieved=True),
+    )
 
 
 def evaluated(memory: MemoryEvidence, action: PolicyAction) -> EvidenceEvaluation:
@@ -66,3 +97,71 @@ def test_report_is_hash_only_by_default_even_for_allowed_memory():
     report = EvidenceReportBuilder().build("governance-v1", "acme", NOW, (evaluated(allowed, PolicyAction.ALLOW),))
 
     assert report.to_dict()["items"][0]["content"] == "[hash-only]"
+
+
+def test_report_serializes_valid_output_evidence():
+    engine = MemoryGovernanceEngine(POLICY)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    answer = "Northstar renews in October."
+    result = engine.link_output_evidence(
+        run,
+        answer=answer,
+        citations=(OutputCitation(0, len(answer), answer, "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    payload = run.report.to_dict(output_evidence=result)
+
+    assert payload["output_evidence"]["summary"] == {
+        "valid_links": 1,
+        "invalid_citations": 0,
+        "evidence_gaps": 0,
+    }
+    assert payload["output_evidence"]["valid_links"][0]["evidence_quote"] == "Renewal date: October"
+    assert payload["output_evidence"]["valid_links"][0]["trust"]["level"] == "high"
+
+
+def test_report_redacts_valid_output_evidence_for_restricted_memory():
+    engine = MemoryGovernanceEngine(POLICY)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October", classification=DataClassification.RESTRICTED),),
+        CONTEXT,
+    )
+    answer = "Northstar renews in October."
+    result = engine.link_output_evidence(
+        run,
+        answer=answer,
+        citations=(OutputCitation(0, len(answer), answer, "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    payload = run.report.to_dict(output_evidence=result)
+
+    assert run.by_id("crm-104").policy.action is PolicyAction.REVIEW_REQUIRED
+    assert payload["items"][0]["content"] == "[redacted]"
+    assert payload["output_evidence"]["valid_links"][0]["evidence_quote"] == "[redacted]"
+
+
+def test_report_never_serializes_unvalidated_evidence_quotes():
+    engine = MemoryGovernanceEngine(POLICY)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    raw_quote = "production token: secret-token-value"
+    result = engine.link_output_evidence(
+        run,
+        answer="Northstar",
+        citations=(OutputCitation(0, 9, "Northstar", "crm-104", raw_quote, "factual_support"),),
+    )
+
+    payload = run.report.to_dict(output_evidence=result)
+
+    assert result.valid_links == ()
+    assert raw_quote not in repr(result)
+    assert raw_quote not in repr(payload)
+    assert payload["output_evidence"]["invalid_citations"][0]["reason_codes"] == ["evidence:quote_not_found"]

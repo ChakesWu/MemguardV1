@@ -11,6 +11,9 @@ from .models import (
     GovernancePolicy,
     InfluenceResult,
     MemoryEvidence,
+    OutputCitation,
+    OutputEvidenceResult,
+    OutputEvidenceRole,
     PolicyAction,
     PolicyDecision,
     PromptGateResult,
@@ -19,6 +22,7 @@ from .models import (
     TrustFactors,
     TrustLevel,
     TrustResult,
+    ValidatedEvidenceLink,
 )
 from .policy import PolicyEngine
 from .report import EvidenceReport, EvidenceReportBuilder
@@ -37,6 +41,9 @@ __all__ = [
     "InfluenceResult",
     "MemoryEvidence",
     "MemoryGovernanceEngine",
+    "OutputCitation",
+    "OutputEvidenceResult",
+    "OutputEvidenceRole",
     "PolicyAction",
     "PolicyDecision",
     "PolicyEngine",
@@ -48,4 +55,5 @@ __all__ = [
     "TrustFactors",
     "TrustLevel",
     "TrustResult",
+    "ValidatedEvidenceLink",
 ]
