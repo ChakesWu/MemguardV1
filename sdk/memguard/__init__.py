@@ -14,6 +14,13 @@ changes to your agent code.
 from memguard.core import MemGuardInterceptor
 from memguard.core import MemoryEvent, MemoryOp, MemoryType, DecisionTrace
 from memguard.config import LLMConfig, create_llm_client, llm_chat, check_config
+from memguard.governance import (
+    GovernanceContext,
+    GovernancePolicy,
+    MemoryEvidence,
+    MemoryGovernanceEngine,
+    PolicyAction,
+)
 
 __version__ = "0.1.0"
 
@@ -23,6 +30,12 @@ __all__ = [
     "MemoryOp",
     "MemoryType",
     "DecisionTrace",
+    # Memory governance
+    "GovernanceContext",
+    "GovernancePolicy",
+    "MemoryEvidence",
+    "MemoryGovernanceEngine",
+    "PolicyAction",
     # LLM config
     "LLMConfig",
     "create_llm_client",

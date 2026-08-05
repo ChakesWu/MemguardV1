@@ -35,6 +35,7 @@ dependencies = [
 langgraph = ["langgraph>=0.2.0"]
 openai = ["openai>=1.0.0"]
 rich = ["rich>=13.0.0"]
+widemem = ["widemem-ai>=1.5,<2; python_version >= '3.10'", "faiss-cpu>=1.7,<2; python_version >= '3.10'"]
 all = ["langgraph>=0.2.0", "openai>=1.0.0", "rich>=13.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "black>=23.0.0", "mypy>=1.0.0"]
 
@@ -45,7 +46,7 @@ Repository = "https://github.com/yourusername/memguard"
 Issues = "https://github.com/yourusername/memguard/issues"
 
 [tool.setuptools]
-packages = ["memguard", "memguard.core", "memguard.transport", "memguard.adapters"]
+packages = ["memguard", "memguard.core", "memguard.transport", "memguard.adapters", "memguard.governance", "memguard.governance.adapters"]
 
 [tool.setuptools.package-data]
 memguard = ["py.typed"]
