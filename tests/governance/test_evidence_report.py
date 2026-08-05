@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime, timezone
 
+import pytest
+
 from memguard.governance import (
     ConflictStatus,
     DataClassification,
@@ -99,7 +101,7 @@ def test_report_is_hash_only_by_default_even_for_allowed_memory():
     assert report.to_dict()["items"][0]["content"] == "[hash-only]"
 
 
-def test_report_serializes_valid_output_evidence():
+def test_default_hash_only_report_does_not_serialize_raw_output_quote():
     engine = MemoryGovernanceEngine(POLICY)
     run = engine.evaluate_and_build_prompt(
         "When does Northstar renew?",
@@ -120,8 +122,29 @@ def test_report_serializes_valid_output_evidence():
         "invalid_citations": 0,
         "evidence_gaps": 0,
     }
-    assert payload["output_evidence"]["valid_links"][0]["evidence_quote"] == "Renewal date: October"
+    assert payload["output_evidence"]["valid_links"][0]["evidence_quote"] == "[hash-only]"
+    assert "Renewal date: October" not in repr(payload)
     assert payload["output_evidence"]["valid_links"][0]["trust"]["level"] == "high"
+
+
+def test_capture_enabled_report_serializes_allowed_output_quote():
+    engine = MemoryGovernanceEngine(POLICY, capture_allowed_content=True)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    answer = "Northstar renews in October."
+    result = engine.link_output_evidence(
+        run,
+        answer=answer,
+        citations=(OutputCitation(0, len(answer), answer, "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    payload = run.report.to_dict(output_evidence=result)
+
+    assert payload["items"][0]["content"] == "Renewal date: October"
+    assert payload["output_evidence"]["valid_links"][0]["evidence_quote"] == "Renewal date: October"
 
 
 def test_report_redacts_valid_output_evidence_for_restricted_memory():
@@ -165,3 +188,54 @@ def test_report_never_serializes_unvalidated_evidence_quotes():
     assert raw_quote not in repr(result)
     assert raw_quote not in repr(payload)
     assert payload["output_evidence"]["invalid_citations"][0]["reason_codes"] == ["evidence:quote_not_found"]
+
+
+def test_report_serializes_only_sanitized_invalid_citation_fields():
+    engine = MemoryGovernanceEngine(POLICY)
+    run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    submitted_values = (
+        "submitted secret segment",
+        "submitted-secret-memory-id",
+        "submitted secret quote",
+        "submitted-secret-role",
+    )
+    result = engine.link_output_evidence(
+        run,
+        answer="North",
+        citations=(OutputCitation(0, 5, *submitted_values),),
+    )
+
+    payload = run.report.to_dict(output_evidence=result)
+    invalid = payload["output_evidence"]["invalid_citations"][0]
+
+    assert invalid["segment"] is None
+    assert invalid["memory_id"] == "[unknown]"
+    assert invalid["role"] is None
+    assert all(value not in repr(payload) for value in submitted_values)
+
+
+def test_report_rejects_output_evidence_from_a_different_governance_run():
+    engine = MemoryGovernanceEngine(POLICY)
+    first_run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: October"),),
+        CONTEXT,
+    )
+    second_run = engine.evaluate_and_build_prompt(
+        "When does Northstar renew?",
+        (governed_memory("crm-104", "Renewal date: November"),),
+        CONTEXT,
+    )
+    answer = "Northstar renews in October."
+    first_result = engine.link_output_evidence(
+        first_run,
+        answer=answer,
+        citations=(OutputCitation(0, len(answer), answer, "crm-104", "Renewal date: October", "factual_support"),),
+    )
+
+    with pytest.raises(ValueError, match="governance run"):
+        second_run.report.to_dict(output_evidence=first_result)

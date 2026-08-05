@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Iterable, Mapping, Tuple
+from uuid import uuid4
 
 from .models import DataClassification, EvidenceEvaluation, OutputEvidenceResult, PolicyAction, TrustFactor
 
@@ -17,6 +18,7 @@ class EvidenceReport:
     tenant_id: str
     generated_at: datetime
     items: Tuple[Mapping[str, Any], ...]
+    provenance_id: str = field(default_factory=lambda: uuid4().hex)
 
     def to_dict(self, output_evidence: OutputEvidenceResult | None = None) -> dict:
         counts = Counter(str(item["policy"]["action"]) for item in self.items)
@@ -28,6 +30,8 @@ class EvidenceReport:
             "items": deepcopy(list(self.items)),
         }
         if output_evidence is not None:
+            if output_evidence.provenance_id != self.provenance_id:
+                raise ValueError("output evidence belongs to a different governance run")
             payload["output_evidence"] = self._output_evidence(output_evidence)
         return payload
 
@@ -36,7 +40,12 @@ class EvidenceReport:
         valid_links = []
         for link in result.valid_links:
             memory_item = memory_items[link.memory_id]
-            quote = "[redacted]" if memory_item["content"] == "[redacted]" else link.evidence_quote
+            if memory_item["content"] == "[redacted]":
+                quote = "[redacted]"
+            elif memory_item["content"] == "[hash-only]":
+                quote = "[hash-only]"
+            else:
+                quote = link.evidence_quote
             valid_links.append(
                 {
                     "start_offset": link.start_offset,
@@ -87,11 +96,8 @@ class EvidenceReport:
             for gap in result.evidence_gaps
         ]
         return {
-            "summary": {
-                "valid_links": len(valid_links),
-                "invalid_citations": len(invalid_citations),
-                "evidence_gaps": len(evidence_gaps),
-            },
+            "summary": dict(result.summary),
+            "reason_codes": list(result.reason_codes),
             "valid_links": valid_links,
             "invalid_citations": invalid_citations,
             "evidence_gaps": evidence_gaps,
@@ -190,6 +196,14 @@ class EvidenceReportBuilder:
         tenant_id: str,
         generated_at: datetime,
         evaluations: Iterable[EvidenceEvaluation],
+        *,
+        provenance_id: str | None = None,
     ) -> EvidenceReport:
         sanitized = tuple(self._item(item) for item in evaluations)
-        return EvidenceReport(policy_id, tenant_id, generated_at, sanitized)
+        return EvidenceReport(
+            policy_id,
+            tenant_id,
+            generated_at,
+            sanitized,
+            provenance_id or uuid4().hex,
+        )

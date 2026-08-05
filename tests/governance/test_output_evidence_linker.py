@@ -167,6 +167,114 @@ def test_multiple_memories_can_support_the_same_answer_segment():
     assert result.evidence_gaps == ()
 
 
+def test_one_memory_can_support_multiple_answer_segments():
+    answer = "North renews in October. North is covered."
+    first_end = answer.index(".") + 1
+    second_start = answer.index("North", first_end)
+
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        answer,
+        (
+            OutputCitation(0, first_end, answer[:first_end], "crm-104", "Renewal date: October", "factual_support"),
+            OutputCitation(second_start, len(answer), answer[second_start:], "crm-104", "Renewal date: October", "background_context"),
+        ),
+    )
+
+    assert tuple(link.memory_id for link in result.valid_links) == ("crm-104", "crm-104")
+    assert result.evidence_gaps == ()
+
+
+@pytest.mark.parametrize(
+    "citation",
+    [
+        OutputCitation(5, 0, "North", "crm-104", "Renewal date", "factual_support"),
+        OutputCitation(0, 6, "North", "crm-104", "Renewal date", "factual_support"),
+    ],
+)
+def test_rejects_reversed_and_beyond_answer_offsets(citation):
+    result = OutputEvidenceLinker().link(governance_run(), "North", (citation,))
+
+    assert result.valid_links == ()
+    assert result.invalid_citations[0].reason_codes == ("segment:invalid_offsets",)
+
+
+@pytest.mark.parametrize(
+    ("memory_id", "known_quote"),
+    [
+        ("secret-1", "secret-token-value"),
+        ("private-1", "555-0108"),
+    ],
+)
+def test_blocked_policy_validation_does_not_reveal_quote_membership(memory_id, known_quote):
+    present = OutputCitation(0, 5, "North", memory_id, known_quote, "factual_support")
+    absent = replace(present, evidence_quote="wrong guess")
+
+    present_result = OutputEvidenceLinker().link(governance_run(), "North", (present,))
+    absent_result = OutputEvidenceLinker().link(governance_run(), "North", (absent,))
+
+    assert present_result.invalid_citations == absent_result.invalid_citations
+    assert present_result.invalid_citations[0].reason_codes == ("policy:memory_not_eligible",)
+
+
+def test_invalid_audit_fields_are_reconstructed_only_from_validated_values():
+    submitted_values = (
+        "submitted secret segment",
+        "submitted-secret-memory-id",
+        "submitted-secret-role",
+    )
+    citation = OutputCitation(
+        0,
+        5,
+        submitted_values[0],
+        submitted_values[1],
+        "submitted secret quote",
+        submitted_values[2],
+    )
+
+    result = OutputEvidenceLinker().link(governance_run(), "North", (citation,))
+    invalid = result.invalid_citations[0]
+
+    assert invalid.start_offset == 0
+    assert invalid.end_offset == 5
+    assert invalid.segment is None
+    assert invalid.memory_id == "[unknown]"
+    assert invalid.role is None
+    assert all(value not in repr(result) for value in submitted_values)
+    assert "submitted secret quote" not in repr(result)
+
+
+def test_invalid_audit_retains_only_normalized_fields_that_were_validated():
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        "North",
+        (OutputCitation(0, 5, "North", "crm-104", "wrong quote", OutputEvidenceRole.FACTUAL_SUPPORT),),
+    )
+
+    invalid = result.invalid_citations[0]
+    assert invalid.segment == "North"
+    assert invalid.memory_id == "crm-104"
+    assert invalid.role == "factual_support"
+
+
+def test_result_contains_summary_counts_and_aggregate_reason_codes():
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        "North south",
+        (
+            OutputCitation(0, 5, "North", "crm-104", "Renewal date", "factual_support"),
+            OutputCitation(6, 11, "south", "missing", "guess", "unsupported"),
+        ),
+    )
+
+    assert result.summary == {
+        "valid_links": 1,
+        "invalid_citations": 1,
+        "evidence_gaps": 1,
+    }
+    assert result.reason_codes == ("memory:unknown", "role:unsupported")
+
+
 def test_uncited_answer_has_one_evidence_gap_and_no_link():
     result = OutputEvidenceLinker().link(governance_run(), "Unsupported answer.", ())
 
@@ -183,3 +291,14 @@ def test_partial_citation_leaves_the_remaining_words_as_an_evidence_gap():
     )
 
     assert result.evidence_gaps == (EvidenceGap(6, 28, "needs renewal details."),)
+
+
+def test_evidence_gap_excludes_punctuation_adjacent_to_a_covered_segment():
+    answer = "North, south"
+    result = OutputEvidenceLinker().link(
+        governance_run(),
+        answer,
+        (OutputCitation(0, 5, "North", "crm-104", "Renewal date", "factual_support"),),
+    )
+
+    assert result.evidence_gaps == (EvidenceGap(7, 12, "south"),)

@@ -29,6 +29,11 @@ class GovernanceRun:
     gate: PromptGateResult
     report: EvidenceReport
 
+    def __post_init__(self) -> None:
+        memory_ids = [item.evidence.memory_id for item in self.evaluations]
+        if len(memory_ids) != len(set(memory_ids)):
+            raise ValueError("duplicate memory_id values are not allowed in a governance run")
+
     def by_id(self, memory_id: str) -> EvidenceEvaluation:
         return next(item for item in self.evaluations if item.evidence.memory_id == memory_id)
 
@@ -51,6 +56,11 @@ class MemoryGovernanceEngine:
         *,
         output_text: str | None = None,
     ) -> GovernanceRun:
+        memories = tuple(memories)
+        memory_ids = [memory.memory_id for memory in memories]
+        if len(memory_ids) != len(set(memory_ids)):
+            raise ValueError("duplicate memory_id values are not allowed in a governance run")
+
         evaluations = []
         for original in memories:
             trust = self.trust_engine.evaluate(original, context)

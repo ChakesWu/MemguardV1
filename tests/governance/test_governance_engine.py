@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from memguard.governance import (
     ConflictStatus,
     DataClassification,
@@ -103,3 +105,17 @@ def test_engine_links_explicit_output_evidence():
 
     assert result.valid_links[0].memory_id == "crm-104"
     assert result.evidence_gaps == ()
+
+
+def test_engine_rejects_duplicate_memory_ids_before_building_a_run():
+    duplicate_memories = (
+        item("duplicate", "First memory value"),
+        item("duplicate", "Second memory value"),
+    )
+
+    with pytest.raises(ValueError, match="duplicate memory_id"):
+        MemoryGovernanceEngine(POLICY).evaluate_and_build_prompt(
+            "Use governed memory",
+            duplicate_memories,
+            CONTEXT,
+        )

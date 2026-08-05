@@ -212,9 +212,9 @@ class ValidatedEvidenceLink:
 class InvalidEvidenceCitation:
     start_offset: int
     end_offset: int
-    segment: str
+    segment: Optional[str]
     memory_id: str
-    role: str
+    role: Optional[str]
     reason_codes: Tuple[str, ...]
     validation_status: str = "invalid"
 
@@ -232,3 +232,6 @@ class OutputEvidenceResult:
     valid_links: Tuple[ValidatedEvidenceLink, ...]
     invalid_citations: Tuple[InvalidEvidenceCitation, ...]
     evidence_gaps: Tuple[EvidenceGap, ...]
+    provenance_id: str = ""
+    summary: Mapping[str, int] = field(default_factory=dict)
+    reason_codes: Tuple[str, ...] = ()
