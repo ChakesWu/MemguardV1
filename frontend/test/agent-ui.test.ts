@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { parseApprovalInterrupt, messageText } from '../lib/agent-ui'
+import { outputEvidenceParts, parseApprovalInterrupt, parseMessageOutputEvidence, parseOutputEvidence, messageText } from '../lib/agent-ui'
 
 describe('agent UI helpers', () => {
   it('recognizes the approval interrupt emitted by the refund tool', () => {
@@ -23,6 +23,100 @@ describe('agent UI helpers', () => {
   it('renders text from either string or structured LangChain message content', () => {
     expect(messageText('A refund needs review.')).toBe('A refund needs review.')
     expect(messageText([{ type: 'text', text: 'Current policy applies.' }])).toBe('Current policy applies.')
+  })
+
+  it('accepts only explicit, prompt-included evidence whose offsets match the output', () => {
+    const answer = 'ORD-4821 is eligible for manual review.'
+
+    expect(parseOutputEvidence(answer, {
+      items: [{
+        memory_id: 'MEM-ORDER-4821-v1',
+        source: { type: 'support_order', id: 'ORD-4821' },
+      }],
+      output_evidence: { valid_links: [{
+        start_offset: 0,
+        end_offset: 8,
+        segment: 'ORD-4821',
+        memory_id: 'MEM-ORDER-4821-v1',
+        evidence_quote: 'Order ORD-4821 is delivered.',
+        role: 'factual_support',
+        prompt_included: true,
+        validation_status: 'valid',
+        trust: { score: 88, level: 'high' },
+        policy: { action: 'allow' },
+      }], },
+    })).toEqual([expect.objectContaining({
+      memoryId: 'MEM-ORDER-4821-v1',
+      segment: 'ORD-4821',
+      trustScore: 88,
+      policyAction: 'allow',
+    })])
+  })
+
+  it('rejects a citation when its text does not match the visible output', () => {
+    expect(parseOutputEvidence('The order is eligible.', {
+      items: [],
+      output_evidence: { valid_links: [{
+        start_offset: 0,
+        end_offset: 9,
+        segment: 'Wrong text',
+        memory_id: 'MEM-ORDER-4821-v1',
+        evidence_quote: 'Order is eligible.',
+        role: 'factual_support',
+        prompt_included: true,
+        validation_status: 'valid',
+        trust: { score: 88, level: 'high' },
+        policy: { action: 'allow' },
+      }], },
+    })).toEqual([])
+  })
+
+  it('places an evidence chip immediately after the cited output segment', () => {
+    const link = parseOutputEvidence('ORD-4821 is eligible.', {
+      items: [],
+      output_evidence: { valid_links: [{
+        start_offset: 0,
+        end_offset: 8,
+        segment: 'ORD-4821',
+        memory_id: 'MEM-ORDER-4821-v1',
+        evidence_quote: '[hash-only]',
+        role: 'factual_support',
+        prompt_included: true,
+        validation_status: 'valid',
+        trust: { score: 88, level: 'high' },
+        policy: { action: 'allow' },
+      }] },
+    })
+
+    expect(outputEvidenceParts('ORD-4821 is eligible.', link)).toEqual([
+      { kind: 'evidence', text: 'ORD-4821', links: link },
+      { kind: 'text', text: ' is eligible.' },
+    ])
+  })
+
+  it('reads the evidence report only from the agent message MemGuard metadata field', () => {
+    const links = parseMessageOutputEvidence('Order details are verified.', {
+      additional_kwargs: {
+        memguard_output_evidence: {
+          items: [],
+          output_evidence: { valid_links: [{
+            start_offset: 0,
+            end_offset: 13,
+            segment: 'Order details',
+            memory_id: 'MEM-ORDER-v1',
+            evidence_quote: '[hash-only]',
+            role: 'factual_support',
+            prompt_included: true,
+            validation_status: 'valid',
+            trust: { score: 92, level: 'high' },
+            policy: { action: 'allow' },
+          }] },
+        },
+      },
+    })
+
+    expect(links).toHaveLength(1)
+    expect(links[0].memoryId).toBe('MEM-ORDER-v1')
   })
 
   it('does not subscribe to the unsupported legacy tools stream mode', () => {

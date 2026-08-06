@@ -4,7 +4,8 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
 
 import { CUSTOMER_SUPPORT_ASSISTANT_ID, CUSTOMER_SUPPORT_STREAM_MODES, agentClientOptions } from '../../lib/agent-client'
-import { messageText, parseApprovalInterrupt } from '../../lib/agent-ui'
+import { messageText, parseApprovalInterrupt, parseMessageOutputEvidence } from '../../lib/agent-ui'
+import OutputEvidence from './OutputEvidence'
 
 type SupportAgentChatProps = {
   accessToken: string
@@ -91,10 +92,11 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
               const content = messageText(message.content)
               if (!content) return null
               const isUser = message.type === 'human'
+              const evidenceLinks = isUser ? [] : parseMessageOutputEvidence(content, message)
               return (
                 <article key={message.id || index} className={`mg-agent-message ${isUser ? 'mg-agent-message--user' : 'mg-agent-message--assistant'}`}>
                   <span className="mg-agent-message__label">{isUser ? 'You' : 'Support agent'}</span>
-                  <p>{content}</p>
+                  {isUser ? <p>{content}</p> : <OutputEvidence answer={content} links={evidenceLinks} />}
                 </article>
               )
             })}
