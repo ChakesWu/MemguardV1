@@ -40,6 +40,7 @@ def build_support_tools(repository: SupportRepository):
             return {"status": "not_found", "order_id": order_id}
         return {
             "status": "found",
+            "memguard_memory_ids": [f"order:{order.order_id}"],
             "order_id": order.order_id,
             "customer_id": order.customer_id,
             "product": order.product,

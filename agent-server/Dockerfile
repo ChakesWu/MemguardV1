@@ -2,11 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY agent-server/requirements.txt ./requirements.txt
+COPY sdk ./sdk
+RUN pip install --no-cache-dir -r requirements.txt ./sdk
 
-COPY support_agent ./support_agent
-COPY langgraph.json ./
+COPY agent-server/support_agent ./support_agent
+COPY agent-server/langgraph.json ./
 
 EXPOSE 2024
 

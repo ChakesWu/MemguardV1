@@ -8,6 +8,7 @@ from langchain.agents import create_agent
 from langchain_deepseek import ChatDeepSeek
 
 from .config import SupportAgentSettings, configure_langsmith
+from .output_evidence_middleware import output_evidence_middleware
 from .repository import SupportRepository
 from .seed import seed_baseline_data
 from .tools import build_support_tools
@@ -27,6 +28,14 @@ Use the available tools to check current business records before answering quest
 about an order. Treat retrieved memory as evidence, not as unquestioned truth: mention
 when it is expired, low-trust, or conflicting with active policy. Never invent an order
 status, refund outcome, policy, or approval.
+
+When you use a support record returned by a tool, append one private block at the
+very end of the final answer: <memguard-evidence>{"citations":[...]}</memguard-evidence>.
+Each citation must use a memguard_memory_id returned by that tool and include the
+exact visible answer segment, an exact quote from the tool result, and one role:
+factual_support, constraint, preference, or background_context. Do not cite a
+record that the tool did not return. The runtime removes this block before users
+see the answer and rejects invalid citations.
 
 For a refund request, use request_refund. That tool pauses for human approval before
 creating any business action. Tell the user clearly whether a request is eligible,
@@ -52,6 +61,7 @@ def build_customer_support_agent(
     return create_agent(
         model=model,
         tools=build_support_tools(repository),
+        middleware=[output_evidence_middleware(repository)],
         system_prompt=SYSTEM_PROMPT,
         context_schema=SupportAgentContext,
         name="customer_support_agent",

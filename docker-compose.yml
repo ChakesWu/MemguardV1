@@ -27,7 +27,8 @@ services:
 
   agent-server:
     build:
-      context: ./agent-server
+      context: .
+      dockerfile: ./agent-server/Dockerfile
     environment:
       DATABASE_URL: postgresql://memguard:memguard@postgres:5432/memguard
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
