@@ -1,0 +1,3 @@
+[submodule "widemem-ai"]
+	path = widemem-ai
+	url = https://github.com/remete618/widemem-ai.git

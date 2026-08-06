@@ -32,9 +32,6 @@ env/
 .superpowers/
 .offboarding-demo/
 
-# Optional provider source checkout (install the SDK extra in normal use)
-widemem-ai/
-
 # Node
 node_modules/
 .next/
