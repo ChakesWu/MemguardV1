@@ -4,7 +4,7 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
 
 import { CUSTOMER_SUPPORT_ASSISTANT_ID, CUSTOMER_SUPPORT_STREAM_MODES, agentClientOptions } from '../../lib/agent-client'
-import { messageText, parseApprovalInterrupt, parseMessageOutputEvidence } from '../../lib/agent-ui'
+import { messageText, parseApprovalInterrupt, parseMessageOutputEvidence, shouldRenderChatMessage } from '../../lib/agent-ui'
 import OutputEvidence from './OutputEvidence'
 
 type SupportAgentChatProps = {
@@ -89,6 +89,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
               </div>
             )}
             {stream.messages.map((message, index) => {
+              if (!shouldRenderChatMessage(message)) return null
               const content = messageText(message.content)
               if (!content) return null
               const isUser = message.type === 'human'

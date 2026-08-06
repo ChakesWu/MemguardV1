@@ -100,3 +100,23 @@ def test_governs_private_protocol_content_before_it_reaches_the_ui(tmp_path) -> 
 
     assert answer == "ORD-4821 is delivered."
     assert report["output_evidence"]["summary"]["valid_links"] == 1
+
+
+def test_governs_visible_support_order_fields_without_private_protocol(tmp_path) -> None:
+    from support_agent.output_evidence_report import govern_output_content
+    from support_agent.repository import SupportRepository
+    from support_agent.seed import seed_baseline_data
+
+    repository = SupportRepository(f"sqlite:///{tmp_path / 'support.db'}")
+    repository.migrate()
+    seed_baseline_data(repository)
+    answer, report = govern_output_content(
+        repository=repository,
+        tenant_id="acme-dev",
+        content="ORD-4821 was delivered and payment is paid.",
+        prompt_memory_ids={"order:ORD-4821"},
+    )
+
+    assert answer == "ORD-4821 was delivered and payment is paid."
+    assert report["output_evidence"]["summary"]["valid_links"] >= 3
+    assert {link["segment"] for link in report["output_evidence"]["valid_links"]} >= {"ORD-4821", "delivered", "paid"}

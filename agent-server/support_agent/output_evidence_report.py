@@ -37,7 +37,8 @@ def _order_evidence(repository: SupportRepository, tenant_id: str, memory_id: st
     order = repository.get_order(tenant_id, order_id)
     if order is None:
         return None
-    content = f"Order {order.order_id}: status {order.status}; payment {order.payment_status}."
+    delivered_at = order.delivered_at.date().isoformat() if order.delivered_at else "unknown"
+    content = f"Order {order.order_id}: status {order.status}; payment {order.payment_status}; delivered {delivered_at}."
     return MemoryEvidence(
         memory_id=memory_id,
         tenant_id=tenant_id,
@@ -62,6 +63,43 @@ def _evidence_for_ids(
         if item is not None:
             evidence.append(item)
     return tuple(evidence)
+
+
+def _find_unique_segment(answer: str, segment: str) -> tuple[int, int] | None:
+    start = answer.find(segment)
+    if start < 0 or answer.find(segment, start + 1) >= 0:
+        return None
+    return start, start + len(segment)
+
+
+def _infer_support_order_citations(
+    repository: SupportRepository,
+    tenant_id: str,
+    answer: str,
+    prompt_memory_ids: set[str],
+) -> tuple[ExplicitCitation, ...]:
+    citations = []
+    occupied: list[tuple[int, int]] = []
+    for memory_id in sorted(prompt_memory_ids):
+        order_id = memory_id.removeprefix("order:")
+        if order_id == memory_id:
+            continue
+        order = repository.get_order(tenant_id, order_id)
+        if order is None:
+            continue
+        delivered_date = order.delivered_at.date().isoformat() if order.delivered_at else None
+        for segment in (order.order_id, order.status, order.payment_status, delivered_date):
+            if not segment:
+                continue
+            offsets = _find_unique_segment(answer, segment)
+            if offsets is None:
+                continue
+            start, end = offsets
+            if any(start < used_end and end > used_start for used_start, used_end in occupied):
+                continue
+            citations.append(ExplicitCitation(start, end, segment, memory_id, segment, "factual_support"))
+            occupied.append((start, end))
+    return tuple(citations)
 
 
 def build_output_evidence_report(
@@ -106,8 +144,10 @@ def govern_output_content(
     content: str,
     prompt_memory_ids: set[str],
 ) -> tuple[str, dict | None]:
-    """Strip private citations and return a report only when explicit links exist."""
+    """Strip private citations and return governed links for explicit or deterministic support facts."""
     answer, citations = extract_explicit_citations(content)
+    if not citations:
+        citations = _infer_support_order_citations(repository, tenant_id, answer, prompt_memory_ids)
     if not citations:
         return answer, None
     return answer, build_output_evidence_report(

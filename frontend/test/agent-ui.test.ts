@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { outputEvidenceParts, parseApprovalInterrupt, parseMessageOutputEvidence, parseOutputEvidence, messageText } from '../lib/agent-ui'
+import { outputEvidenceParts, parseApprovalInterrupt, parseMessageOutputEvidence, parseOutputEvidence, messageText, shouldRenderChatMessage } from '../lib/agent-ui'
 
 describe('agent UI helpers', () => {
   it('recognizes the approval interrupt emitted by the refund tool', () => {
@@ -123,5 +123,14 @@ describe('agent UI helpers', () => {
     const chatSource = readFileSync(join(process.cwd(), 'components/agent/SupportAgentChat.tsx'), 'utf8')
 
     expect(chatSource).not.toContain('stream.toolProgress')
+  })
+
+  it('does not render tool result messages as support chat turns', () => {
+    expect(shouldRenderChatMessage({
+      type: 'tool',
+      content: '{"status":"found","order_id":"ORD-4821"}',
+    })).toBe(false)
+    expect(shouldRenderChatMessage({ type: 'human', content: 'Refund ORD-4821' })).toBe(true)
+    expect(shouldRenderChatMessage({ type: 'ai', content: 'I found ORD-4821.' })).toBe(true)
   })
 })

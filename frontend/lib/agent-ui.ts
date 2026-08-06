@@ -54,6 +54,11 @@ export function messageText(content: unknown): string {
     .join('\n')
 }
 
+export function shouldRenderChatMessage(message: unknown): boolean {
+  const type = record(message)?.type
+  return type === 'human' || type === 'ai' || type === 'assistant'
+}
+
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
