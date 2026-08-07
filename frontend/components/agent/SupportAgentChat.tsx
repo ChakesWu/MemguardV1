@@ -4,7 +4,8 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
 
 import { CUSTOMER_SUPPORT_ASSISTANT_ID, CUSTOMER_SUPPORT_STREAM_MODES, agentClientOptions } from '../../lib/agent-client'
-import { messageText, parseApprovalInterrupt, parseMessageOutputEvidence, shouldRenderChatMessage } from '../../lib/agent-ui'
+import { OutputEvidenceLink, messageText, parseApprovalInterrupt, parseMessageOutputEvidence, shouldRenderChatMessage } from '../../lib/agent-ui'
+import EvidenceDetailPanel from './EvidenceDetailPanel'
 import OutputEvidence from './OutputEvidence'
 
 type SupportAgentChatProps = {
@@ -15,6 +16,7 @@ type SupportAgentChatProps = {
 export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgentChatProps) {
   const [draft, setDraft] = useState('')
   const [threadId, setThreadId] = useState<string | null>(null)
+  const [selectedEvidence, setSelectedEvidence] = useState<OutputEvidenceLink | null>(null)
   const stream = useStream({
     ...agentClientOptions(accessToken),
     assistantId: CUSTOMER_SUPPORT_ASSISTANT_ID,
@@ -97,7 +99,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
               return (
                 <article key={message.id || index} className={`mg-agent-message ${isUser ? 'mg-agent-message--user' : 'mg-agent-message--assistant'}`}>
                   <span className="mg-agent-message__label">{isUser ? 'You' : 'Support agent'}</span>
-                  {isUser ? <p>{content}</p> : <OutputEvidence answer={content} links={evidenceLinks} />}
+                  {isUser ? <p>{content}</p> : <OutputEvidence answer={content} links={evidenceLinks} onOpenEvidence={setSelectedEvidence} />}
                 </article>
               )
             })}
@@ -127,6 +129,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
           </form>
         </section>
       </section>
+      {selectedEvidence && <EvidenceDetailPanel link={selectedEvidence} onClose={() => setSelectedEvidence(null)} />}
     </main>
   )
 }

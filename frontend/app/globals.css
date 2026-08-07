@@ -1257,17 +1257,28 @@ code {
 .mg-agent-answer { white-space: pre-wrap; }
 .mg-evidence-anchor { position: relative; display: inline; }
 .mg-evidence-chip { position: relative; display: inline-flex; align-items: center; gap: .35rem; margin-left: .45rem; border: 1px solid color-mix(in srgb, var(--mg-success) 72%, var(--mg-border)); border-radius: .32rem; background: color-mix(in srgb, var(--mg-success) 7%, transparent); color: var(--mg-text-soft); padding: .2rem .42rem; cursor: help; font: inherit; font-size: .72rem; line-height: 1.2; white-space: nowrap; }
-.mg-evidence-chip:hover, .mg-evidence-chip:focus-visible { border-color: var(--mg-success); background: color-mix(in srgb, var(--mg-success) 13%, transparent); outline: none; }
+.mg-evidence-anchor:hover .mg-evidence-chip, .mg-evidence-anchor:focus-within .mg-evidence-chip { border-color: var(--mg-success); background: color-mix(in srgb, var(--mg-success) 13%, transparent); outline: none; }
 .mg-evidence-chip__icon, .mg-evidence-chip strong { color: var(--mg-success); font-weight: 700; }
 .mg-evidence-card { position: absolute; z-index: 10; right: 0; bottom: calc(100% + .7rem); display: none; width: min(23rem, calc(100vw - 3rem)); border: 1px solid var(--mg-border-strong); border-radius: .35rem; background: #171717; box-shadow: 0 18px 48px rgba(0, 0, 0, .42); color: var(--mg-text); padding: 1rem; text-align: left; white-space: normal; }
-.mg-evidence-chip:hover .mg-evidence-card, .mg-evidence-chip:focus-visible .mg-evidence-card { display: grid; gap: 0; }
+.mg-evidence-anchor:hover .mg-evidence-card, .mg-evidence-anchor:focus-within .mg-evidence-card { display: grid; gap: 0; }
+.mg-evidence-card::before { position: absolute; right: 0; bottom: -.7rem; width: 100%; height: .7rem; content: ''; }
 .mg-evidence-card::after { position: absolute; right: 1.2rem; bottom: -.38rem; width: .7rem; height: .7rem; border-right: 1px solid var(--mg-border-strong); border-bottom: 1px solid var(--mg-border-strong); background: #171717; content: ''; transform: rotate(45deg); }
 .mg-evidence-card__title { margin-bottom: .7rem; color: var(--mg-text); font-size: .9rem; font-weight: 600; }
 .mg-evidence-card__row { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--mg-border); padding: .5rem 0; color: var(--mg-muted); font-size: .72rem; }
 .mg-evidence-card__row b { font-weight: 400; }
 .mg-evidence-card__row em { color: var(--mg-text-soft); font-style: normal; text-align: right; }
 .mg-evidence-card__row:nth-of-type(3) em { color: var(--mg-success); }
-.mg-evidence-card__link { margin-top: .75rem; color: var(--mg-blue); font-size: .75rem; }
+.mg-evidence-card__link { margin-top: .75rem; border: 0; background: transparent; color: var(--mg-blue); cursor: pointer; font: inherit; font-size: .75rem; padding: 0; text-align: left; }
+.mg-evidence-card__link:hover, .mg-evidence-card__link:focus-visible { color: color-mix(in srgb, var(--mg-blue) 74%, white); outline: none; text-decoration: underline; }
+.mg-evidence-panel-backdrop { position: fixed; z-index: 30; inset: 0; display: flex; justify-content: flex-end; background: rgba(0, 0, 0, .45); }
+.mg-evidence-panel { width: min(28rem, 100vw); min-height: 100%; overflow-y: auto; border-left: 1px solid var(--mg-border-strong); background: #171717; box-shadow: -18px 0 48px rgba(0, 0, 0, .42); padding: 1.5rem; }
+.mg-evidence-panel header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.mg-evidence-panel h2 { margin: .25rem 0 0; font-size: 1.2rem; }
+.mg-evidence-panel__segment { margin: 1.5rem 0 1rem; border-left: 2px solid var(--mg-success); color: var(--mg-text); padding-left: .8rem; }
+.mg-evidence-panel dl { margin: 0 0 1.5rem; }
+.mg-evidence-panel__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1rem; border-top: 1px solid var(--mg-border); padding: .75rem 0; }
+.mg-evidence-panel__row dt { color: var(--mg-muted); font-size: .78rem; }
+.mg-evidence-panel__row dd { margin: 0; color: var(--mg-text-soft); font-size: .82rem; overflow-wrap: anywhere; text-align: right; }
 .mg-agent-tool { display: flex; align-items: center; gap: .55rem; align-self: flex-start; color: var(--mg-muted); font-size: .8rem; }
 .mg-agent-tool small { text-transform: capitalize; }
 .mg-agent-tool__dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--mg-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--mg-accent) 15%, transparent); }

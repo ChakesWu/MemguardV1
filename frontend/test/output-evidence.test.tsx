@@ -30,5 +30,7 @@ describe('OutputEvidence', () => {
     expect(markup).toContain('Trust')
     expect(markup).toContain('88')
     expect(markup).toContain('Included in prompt')
+    expect(markup).toContain('aria-haspopup="dialog"')
+    expect(markup).toContain('Open full evidence')
   })
 })
