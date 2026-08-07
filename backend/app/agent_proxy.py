@@ -67,7 +67,9 @@ def governed_output_records(*, tenant_id: str, agent_id: str, session_id: str, u
 def _governed_output_from_sse(payload: Any) -> tuple[str, dict[str, Any]] | None:
     if not isinstance(payload, dict):
         return None
-    candidates = [payload, payload.get("data")]
+    candidates = [payload, payload.get("data"), payload.get("values")]
+    if isinstance(payload.get("data"), dict):
+        candidates.append(payload["data"].get("values"))
     for candidate in candidates:
         messages = candidate.get("messages") if isinstance(candidate, dict) else None
         if not isinstance(messages, list):

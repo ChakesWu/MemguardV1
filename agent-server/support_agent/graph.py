@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
 from langchain.agents import create_agent
 from langchain_deepseek import ChatDeepSeek
 
@@ -57,6 +58,10 @@ def build_customer_support_agent(
         api_key=settings.deepseek_api_key,
         temperature=0,
         streaming=True,
+    ).with_retry(
+        retry_if_exception_type=(httpx.RemoteProtocolError, httpx.ReadTimeout, httpx.ConnectError),
+        wait_exponential_jitter=True,
+        stop_after_attempt=3,
     )
     return create_agent(
         model=model,

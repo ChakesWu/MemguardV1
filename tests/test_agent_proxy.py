@@ -10,11 +10,23 @@ from app.auth import TenantPrincipal
 import pytest
 
 from app.agent_proxy import (
+    _governed_output_from_sse,
     create_tenant_thread_id,
     governed_output_records,
     inject_trusted_agent_context,
     is_allowed_thread_path,
 )
+
+
+def test_agent_proxy_extracts_evidence_from_langgraph_values_state() -> None:
+    report = {"output_evidence": {"valid_links": []}}
+    payload = {"values": {"messages": [{
+        "type": "ai",
+        "content": "ORD-4821 was delivered.",
+        "additional_kwargs": {"memguard_output_evidence": report},
+    }]}}
+
+    assert _governed_output_from_sse(payload) == ("ORD-4821 was delivered.", report)
 
 
 def test_governed_output_records_create_console_read_evidence() -> None:
