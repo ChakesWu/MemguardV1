@@ -120,3 +120,25 @@ def test_governs_visible_support_order_fields_without_private_protocol(tmp_path)
     assert answer == "ORD-4821 was delivered and payment is paid."
     assert report["output_evidence"]["summary"]["valid_links"] >= 3
     assert {link["segment"] for link in report["output_evidence"]["valid_links"]} >= {"ORD-4821", "delivered", "paid"}
+
+
+def test_support_order_evidence_has_a_complete_high_trust_assessment(tmp_path) -> None:
+    from support_agent.output_evidence_report import govern_output_content
+    from support_agent.repository import SupportRepository
+    from support_agent.seed import seed_baseline_data
+
+    repository = SupportRepository(f"sqlite:///{tmp_path / 'support.db'}")
+    repository.migrate()
+    seed_baseline_data(repository)
+
+    _, report = govern_output_content(
+        repository=repository,
+        tenant_id="acme-dev",
+        content="ORD-4821 was delivered.",
+        prompt_memory_ids={"order:ORD-4821"},
+    )
+
+    link = report["output_evidence"]["valid_links"][0]
+    assert link["trust"]["score"] is not None
+    assert link["trust"]["level"] == "high"
+    assert link["policy"]["action"] == "allow"

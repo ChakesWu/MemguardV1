@@ -24,6 +24,8 @@ from .repository import SupportRepository
 _POLICY = GovernancePolicy(
     policy_id="customer-support-governance-v1",
     source_scores={"support_order": 100},
+    writer_scores={"support-order-service": 100},
+    max_age_days={"support_order": 365},
     allow_threshold=80,
     warn_threshold=60,
     review_threshold=40,
@@ -45,6 +47,7 @@ def _order_evidence(repository: SupportRepository, tenant_id: str, memory_id: st
         content=content,
         source_type="support_order",
         source_id=order.order_id,
+        writer_id="support-order-service",
         created_at=order.delivered_at,
         verified_at=datetime.now(timezone.utc),
         conflict_status=ConflictStatus.NONE,
