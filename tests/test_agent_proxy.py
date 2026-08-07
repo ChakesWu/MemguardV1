@@ -11,9 +11,44 @@ import pytest
 
 from app.agent_proxy import (
     create_tenant_thread_id,
+    governed_output_records,
     inject_trusted_agent_context,
     is_allowed_thread_path,
 )
+
+
+def test_governed_output_records_create_console_read_evidence() -> None:
+    report = {
+        "items": [{"memory_id": "order:ORD-4821", "source": {"type": "support_order_db", "id": "ORD-4821"}}],
+        "output_evidence": {
+            "valid_links": [{
+                "memory_id": "order:ORD-4821",
+                "role": "factual_support",
+                "trust": {"score": 91.5, "level": "high"},
+                "policy": {"action": "allow"},
+                "influence": {"score": 1.0},
+                "prompt_included": True,
+            }],
+        },
+    }
+
+    events, trace = governed_output_records(
+        tenant_id="acme-dev",
+        agent_id="customer_support_agent",
+        session_id="thread-1",
+        user_input="Refund ORD-4821",
+        answer="ORD-4821 was delivered.",
+        report=report,
+    )
+
+    assert len(events) == 1
+    assert events[0].event_type == "read"
+    assert events[0].memory_id == "order:ORD-4821"
+    assert events[0].trust_score == 91.5
+    assert events[0].metadata["evidence_role"] == "factual_support"
+    assert trace.tenant_id == "acme-dev"
+    assert trace.session_id == "thread-1"
+    assert trace.input_memory_events == [events[0].event_id]
 
 
 def test_agent_proxy_overwrites_browser_supplied_identity() -> None:

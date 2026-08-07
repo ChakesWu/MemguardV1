@@ -80,10 +80,24 @@ SUPPORT_SCHEMA = (
     """,
 )
 
+SUPPORT_ORDER_GOVERNANCE_COLUMNS = (
+    "source_type TEXT NOT NULL DEFAULT 'unknown'",
+    "source_id TEXT",
+    "writer_id TEXT",
+    "source_updated_at TEXT",
+    "verified_at TEXT",
+    "conflict_status TEXT NOT NULL DEFAULT 'unknown'",
+)
+
 
 def apply_support_migrations(connection) -> None:
     for statement in SUPPORT_SCHEMA:
         connection.execute(statement)
+    existing_columns = {row[1] for row in connection.execute("PRAGMA table_info(support_orders)")}
+    for definition in SUPPORT_ORDER_GOVERNANCE_COLUMNS:
+        name = definition.split(" ", 1)[0]
+        if name not in existing_columns:
+            connection.execute(f"ALTER TABLE support_orders ADD COLUMN {definition}")
     connection.execute(
         "INSERT OR IGNORE INTO support_schema_migrations(version, applied_at) VALUES (?, ?)",
         (1, datetime.now(timezone.utc).isoformat()),

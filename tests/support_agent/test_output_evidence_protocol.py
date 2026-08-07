@@ -140,5 +140,8 @@ def test_support_order_evidence_has_a_complete_high_trust_assessment(tmp_path) -
 
     link = report["output_evidence"]["valid_links"][0]
     assert link["trust"]["score"] is not None
+    assert 80 < link["trust"]["score"] < 100
     assert link["trust"]["level"] == "high"
     assert link["policy"]["action"] == "allow"
+    assert link["trust"]["factors"]["writer"]["score"] == 88
+    assert link["trust"]["factors"]["freshness"]["score"] < 100

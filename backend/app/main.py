@@ -30,6 +30,7 @@ app.add_middleware(
 )
 
 gateway = MemoryGateway()
+app.state.gateway = gateway
 agent = MemoryAwareAgent(gateway=gateway, llm=LLMClient())
 audit_generator = AuditReportGenerator()
 

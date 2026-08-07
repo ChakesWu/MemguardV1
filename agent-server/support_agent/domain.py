@@ -26,6 +26,12 @@ class Order:
     delivered_at: datetime | None
     payment_status: str
     shipping_address: dict[str, Any]
+    source_type: str = "unknown"
+    source_id: str | None = None
+    writer_id: str | None = None
+    source_updated_at: datetime | None = None
+    verified_at: datetime | None = None
+    conflict_status: str = "unknown"
 
 
 @dataclass(frozen=True)
