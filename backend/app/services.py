@@ -725,6 +725,48 @@ class MemoryGateway:
         except Exception as e:
             return {"events": [], "total": 0, "error": str(e)}
 
+    def governed_memory_inventory(self, tenant_id: str) -> list[dict[str, Any]]:
+        """Return the support agent's current memory sources for audit display only."""
+        try:
+            with self.database.connect() as conn:
+                orders = conn.execute("SELECT * FROM support_orders WHERE tenant_id = ? ORDER BY order_id", (tenant_id,)).fetchall()
+                policies = conn.execute("SELECT * FROM support_policies WHERE tenant_id = ? ORDER BY document_id, version", (tenant_id,)).fetchall()
+                memories = conn.execute("SELECT * FROM support_memories WHERE tenant_id = ? ORDER BY memory_id, version_id", (tenant_id,)).fetchall()
+        except Exception:
+            return []
+
+        items: list[dict[str, Any]] = []
+        for row in orders:
+            data = dict(row)
+            items.append({
+                "memory_id": f"order:{data['order_id']}", "kind": "support_order",
+                "summary": f"{data['order_id']} · {data['product']} · {data['status']} · {data['payment_status']}",
+                "source_type": data.get("source_type") or "support_order_db", "source_id": data.get("source_id") or data["order_id"],
+                "writer_id": data.get("writer_id") or "unknown", "verified_at": data.get("verified_at"),
+                "updated_at": data.get("source_updated_at"), "conflict_status": data.get("conflict_status") or "unknown",
+                "trust_score": 92.0, "policy_status": "allow", "prompt_eligible": True,
+            })
+        for row in policies:
+            data = dict(row)
+            items.append({
+                "memory_id": f"policy:{data['document_id']}:{data['version']}", "kind": "policy_document",
+                "summary": f"{data['document_id']} {data['version']} · {data['status']}",
+                "source_type": "support_policy_db", "source_id": data["document_id"], "writer_id": "policy-administration",
+                "verified_at": data["effective_from"], "updated_at": data["effective_from"], "conflict_status": "none",
+                "trust_score": 90.0, "policy_status": "allow" if data["status"] == "active" else "review_required", "prompt_eligible": data["status"] == "active",
+            })
+        trust_by_level = {"high": 85.0, "medium": 70.0, "low": 55.0}
+        for row in memories:
+            data = dict(row)
+            active = data["status"] == "active" and (not data.get("valid_until") or data["valid_until"] >= datetime.now(timezone.utc).isoformat())
+            items.append({
+                "memory_id": data["memory_id"], "kind": data["kind"], "summary": str(json.loads(data["value_json"])),
+                "source_type": data["source_type"], "source_id": data.get("source_id"), "writer_id": "support-agent-memory",
+                "verified_at": data.get("valid_from"), "updated_at": data.get("valid_from"), "conflict_status": "none",
+                "trust_score": trust_by_level.get(data["trust_level"], 50.0), "policy_status": "allow" if active else "review_required", "prompt_eligible": active,
+            })
+        return items
+
     def get_sessions_list(self, limit: int = 50, tenant_id: str | None = None) -> dict[str, Any]:
         """Return distinct sessions with their event counts and latest timestamps."""
         try:

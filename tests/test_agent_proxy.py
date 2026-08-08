@@ -1,5 +1,7 @@
+import json
 import pathlib
 import sys
+import threading
 from uuid import UUID
 
 
@@ -11,11 +13,54 @@ import pytest
 
 from app.agent_proxy import (
     _governed_output_from_sse,
+    _persist_governed_output,
+    extract_sse_payloads,
     create_tenant_thread_id,
     governed_output_records,
     inject_trusted_agent_context,
     is_allowed_thread_path,
 )
+
+
+def test_agent_proxy_decodes_crlf_delimited_sse_payloads() -> None:
+    payload = {"values": {"messages": []}}
+    buffer, payloads = extract_sse_payloads(b"", f"event: values\r\ndata: {json.dumps(payload)}\r\n\r\n".encode())
+
+    assert buffer == b""
+    assert payloads == [payload]
+
+
+def test_persist_governed_output_persists_events_and_trace() -> None:
+    report = {
+        "items": [{"memory_id": "order:ORD-4821", "source": {"type": "support_order_db", "id": "ORD-4821"}}],
+        "output_evidence": {"valid_links": [{
+            "memory_id": "order:ORD-4821", "role": "factual_support",
+            "trust": {"score": 91.5, "level": "high"}, "policy": {"action": "allow"},
+            "influence": {"score": 1.0}, "prompt_included": True,
+        }]},
+    }
+
+    class Gateway:
+        def __init__(self) -> None:
+            self._lock = threading.Lock()
+            self.events = []
+            self.persisted_events = []
+            self.persisted_traces = []
+
+        def _persist_event(self, event) -> None:
+            self.persisted_events.append(event)
+
+        def create_decision_trace(self, trace) -> None:
+            pass
+
+        def _persist_trace(self, trace) -> None:
+            self.persisted_traces.append(trace)
+
+    gateway = Gateway()
+    _persist_governed_output(gateway, tenant_id="acme-dev", agent_id="customer_support_agent", session_id="thread-1", user_input="Refund ORD-4821", answer="ORD-4821 was delivered.", report=report)
+
+    assert len(gateway.persisted_events) == 1
+    assert len(gateway.persisted_traces) == 1
 
 
 def test_agent_proxy_extracts_evidence_from_langgraph_values_state() -> None:

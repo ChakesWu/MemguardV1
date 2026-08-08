@@ -7,7 +7,7 @@ import EvidenceWorkspace from '../components/EvidenceWorkspace'
 import MemoryDiffViewer from '../components/MemoryDiffViewer'
 import OutputNavigator from '../components/OutputNavigator'
 import { currentTenantId, loginRequired, logout } from '../lib/auth'
-import { Conflict, DecisionTrace, MemoryEvent, Stats } from '../lib/dashboard'
+import { Conflict, DecisionTrace, GovernedMemory, MemoryEvent, Stats } from '../lib/dashboard'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const OPERATIONS = ['all', 'create', 'read', 'update', 'delete', 'query']
@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<MemoryEvent[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [traces, setTraces] = useState<DecisionTrace[]>([])
+  const [inventory, setInventory] = useState<GovernedMemory[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<MemoryEvent | null>(null)
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null)
@@ -61,6 +62,10 @@ export default function DashboardPage() {
       const eventsRes = await apiFetch(`${API_BASE}/v1/events?${params.toString()}`)
       const eventsData = await eventsRes.json()
       setEvents(eventsData.events || [])
+
+      const inventoryRes = await apiFetch(`${API_BASE}/v1/memory/inventory`)
+      const inventoryData = await inventoryRes.json()
+      setInventory(inventoryData.items || [])
 
       try {
         const traceNamespace = currentTenantId()
@@ -224,6 +229,31 @@ export default function DashboardPage() {
                     </tr>
                   ))}
                 </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="mg-events" aria-labelledby="mg-inventory-title">
+            <header className="mg-events__header">
+              <div>
+                <p className="mg-eyebrow">Governed memory inventory</p>
+                <h2 id="mg-inventory-title">All memory available to the support agent</h2>
+              </div>
+              <div className="mg-events__counts"><span>{inventory.length} records</span></div>
+            </header>
+            <div className="mg-table-wrap">
+              <table className="mg-table mg-inventory-table">
+                <thead><tr><th>Memory</th><th>Source / writer</th><th>Trust</th><th>Policy</th><th>Prompt</th></tr></thead>
+                <tbody>{inventory.length === 0 ? (
+                  <tr><td colSpan={5} className="mg-table__empty">No governed support memory is available.</td></tr>
+                ) : inventory.map(item => (
+                  <tr key={`${item.memory_id}:${item.kind}`}>
+                    <td><code>{item.memory_id}</code><small>{item.summary}</small></td>
+                    <td><span>{item.source_type}</span><small>{item.source_id || 'no source id'} · {item.writer_id || 'unknown writer'}</small></td>
+                    <td>{item.trust_score.toFixed(0)}<small>{item.conflict_status === 'none' ? 'verified / no conflict' : item.conflict_status}</small></td>
+                    <td>{item.policy_status}</td><td>{item.prompt_eligible ? 'Eligible' : 'Not included'}</td>
+                  </tr>
+                ))}</tbody>
               </table>
             </div>
           </section>

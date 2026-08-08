@@ -33,6 +33,21 @@ export interface Stats {
   db_path?: string
 }
 
+export interface GovernedMemory {
+  memory_id: string
+  kind: string
+  summary: string
+  source_type: string
+  source_id?: string
+  writer_id?: string
+  verified_at?: string
+  updated_at?: string
+  conflict_status: string
+  trust_score: number
+  policy_status: string
+  prompt_eligible: boolean
+}
+
 export interface EvidenceItem {
   event_id: string
   side?: 'input' | 'output'

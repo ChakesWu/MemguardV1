@@ -78,6 +78,11 @@ def timeline(payload: TimelineQueryRequest, request: Request):
     return gateway.timeline(payload.model_copy(update={"tenant_id": tenant_id}))
 
 
+@app.get("/v1/memory/inventory")
+def governed_memory_inventory(request: Request):
+    return {"items": gateway.governed_memory_inventory(request_tenant(request))}
+
+
 @app.post("/v1/agent/run")
 def run_agent(payload: AgentRunRequest, request: Request):
     tenant_id = request_tenant(request, payload.tenant_id)

@@ -653,6 +653,8 @@ code {
   place-items: center;
 }
 
+.mg-inventory-table td small { display: block; max-width: 22rem; margin-top: .35rem; color: var(--mg-muted); font-size: .72rem; line-height: 1.35; }
+
 .mg-empty-state {
   width: min(42rem, 100%);
   border-top: 1px solid var(--mg-border-strong);

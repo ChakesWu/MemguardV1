@@ -24,6 +24,26 @@ router = APIRouter(prefix="/v1/agent-server", tags=["customer-support-agent"])
 _HOP_BY_HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"}
 
 
+def extract_sse_payloads(buffer: bytes, chunk: bytes) -> tuple[bytes, list[dict[str, Any]]]:
+    """Decode complete SSE JSON events, accepting either LF or CRLF framing."""
+    buffer = (buffer + chunk).replace(b"\r\n", b"\n")
+    payloads: list[dict[str, Any]] = []
+    while b"\n\n" in buffer:
+        raw_event, buffer = buffer.split(b"\n\n", 1)
+        data = b"\n".join(
+            line[5:].lstrip()
+            for line in raw_event.split(b"\n")
+            if line.startswith(b"data:")
+        )
+        try:
+            payload = json.loads(data) if data else None
+        except json.JSONDecodeError:
+            payload = None
+        if isinstance(payload, dict):
+            payloads.append(payload)
+    return buffer, payloads
+
+
 def governed_output_records(*, tenant_id: str, agent_id: str, session_id: str, user_input: str, answer: str, report: dict[str, Any]) -> tuple[list[MemoryEvent], DecisionTrace]:
     """Convert validated agent output evidence into the console's canonical records."""
     items = {item.get("memory_id"): item for item in report.get("items", []) if isinstance(item, dict)}
@@ -94,6 +114,7 @@ def _persist_governed_output(gateway: Any, *, tenant_id: str, agent_id: str, ses
     for event in events:
         gateway._persist_event(event)
     gateway.create_decision_trace(trace)
+    gateway._persist_trace(trace)
 
 
 def inject_trusted_agent_context(payload: dict[str, Any], principal: TenantPrincipal) -> dict[str, Any]:
@@ -209,14 +230,9 @@ async def proxy_agent_server(path: str, request: Request) -> StreamingResponse:
         recorded = set()
         try:
             async for chunk in upstream.aiter_raw():
-                sse_buffer += chunk
-                while b"\n\n" in sse_buffer:
-                    raw_event, sse_buffer = sse_buffer.split(b"\n\n", 1)
-                    data = b"\n".join(line[5:].lstrip() for line in raw_event.replace(b"\r\n", b"\n").split(b"\n") if line.startswith(b"data:"))
-                    try:
-                        governed = _governed_output_from_sse(json.loads(data)) if data else None
-                    except json.JSONDecodeError:
-                        governed = None
+                sse_buffer, payloads = extract_sse_payloads(sse_buffer, chunk)
+                for payload in payloads:
+                    governed = _governed_output_from_sse(payload)
                     if governed is not None:
                         answer, report = governed
                         fingerprint = sha256(f"{answer}:{json.dumps(report, sort_keys=True)}".encode()).hexdigest()
