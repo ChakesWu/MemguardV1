@@ -1,6 +1,7 @@
 """Public API for MemGuard's provider-neutral memory governance engine."""
 
 from .gate import PromptGate
+from .handover import HandoverEngine, HandoverItem, HandoverMemory, HandoverOutcome, HandoverReport, MemoryOwner, TransferPolicy
 from .engine import GovernanceRun, MemoryGovernanceEngine
 from .influence import InfluenceEngine
 from .models import (
@@ -37,9 +38,15 @@ __all__ = [
     "GovernanceContext",
     "GovernancePolicy",
     "GovernanceRun",
+    "HandoverEngine",
+    "HandoverItem",
+    "HandoverMemory",
+    "HandoverOutcome",
+    "HandoverReport",
     "InfluenceEngine",
     "InfluenceResult",
     "MemoryEvidence",
+    "MemoryOwner",
     "MemoryGovernanceEngine",
     "OutputCitation",
     "OutputEvidenceResult",
@@ -55,5 +62,6 @@ __all__ = [
     "TrustFactors",
     "TrustLevel",
     "TrustResult",
+    "TransferPolicy",
     "ValidatedEvidenceLink",
 ]

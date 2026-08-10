@@ -77,6 +77,9 @@ class SupportRepository:
             tenant_id=data["tenant_id"], order_id=data["order_id"], customer_id=data["customer_id"],
             product=data["product"], status=data["status"], delivered_at=_timestamp(data["delivered_at"]),
             payment_status=data["payment_status"], shipping_address=json.loads(data["shipping_address_json"]),
+            source_type=data.get("source_type", "unknown"), source_id=data.get("source_id"), writer_id=data.get("writer_id"),
+            source_updated_at=_timestamp(data.get("source_updated_at")), verified_at=_timestamp(data.get("verified_at")),
+            conflict_status=data.get("conflict_status", "unknown"),
         )
 
     def upsert_customer(self, customer: Customer) -> None:
@@ -88,10 +91,10 @@ class SupportRepository:
 
     def upsert_order(self, order: Order) -> None:
         with self._connection() as connection:
-            statement = "INSERT OR REPLACE INTO support_orders (tenant_id, order_id, customer_id, product, status, delivered_at, payment_status, shipping_address_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            statement = "INSERT OR REPLACE INTO support_orders (tenant_id, order_id, customer_id, product, status, delivered_at, payment_status, shipping_address_json, source_type, source_id, writer_id, source_updated_at, verified_at, conflict_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             if self.driver == "postgres":
-                statement = "INSERT INTO support_orders (tenant_id, order_id, customer_id, product, status, delivered_at, payment_status, shipping_address_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, order_id) DO UPDATE SET customer_id = EXCLUDED.customer_id, product = EXCLUDED.product, status = EXCLUDED.status, delivered_at = EXCLUDED.delivered_at, payment_status = EXCLUDED.payment_status, shipping_address_json = EXCLUDED.shipping_address_json"
-            self._execute(connection, statement, (order.tenant_id, order.order_id, order.customer_id, order.product, order.status, order.delivered_at.isoformat() if order.delivered_at else None, order.payment_status, json.dumps(order.shipping_address)))
+                statement = "INSERT INTO support_orders (tenant_id, order_id, customer_id, product, status, delivered_at, payment_status, shipping_address_json, source_type, source_id, writer_id, source_updated_at, verified_at, conflict_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (tenant_id, order_id) DO UPDATE SET customer_id = EXCLUDED.customer_id, product = EXCLUDED.product, status = EXCLUDED.status, delivered_at = EXCLUDED.delivered_at, payment_status = EXCLUDED.payment_status, shipping_address_json = EXCLUDED.shipping_address_json, source_type = EXCLUDED.source_type, source_id = EXCLUDED.source_id, writer_id = EXCLUDED.writer_id, source_updated_at = EXCLUDED.source_updated_at, verified_at = EXCLUDED.verified_at, conflict_status = EXCLUDED.conflict_status"
+            self._execute(connection, statement, (order.tenant_id, order.order_id, order.customer_id, order.product, order.status, order.delivered_at.isoformat() if order.delivered_at else None, order.payment_status, json.dumps(order.shipping_address), order.source_type, order.source_id, order.writer_id, order.source_updated_at.isoformat() if order.source_updated_at else None, order.verified_at.isoformat() if order.verified_at else None, order.conflict_status))
 
     def upsert_policy(self, policy: PolicyDocument) -> None:
         with self._connection() as connection:
@@ -182,7 +185,13 @@ class SupportRepository:
 SUPPORT_SCHEMA_POSTGRES = (
     "CREATE TABLE IF NOT EXISTS support_schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS support_customers (tenant_id TEXT NOT NULL, customer_id TEXT NOT NULL, name TEXT NOT NULL, tier TEXT NOT NULL, account_status TEXT NOT NULL, PRIMARY KEY (tenant_id, customer_id))",
-    "CREATE TABLE IF NOT EXISTS support_orders (tenant_id TEXT NOT NULL, order_id TEXT NOT NULL, customer_id TEXT NOT NULL, product TEXT NOT NULL, status TEXT NOT NULL, delivered_at TEXT, payment_status TEXT NOT NULL, shipping_address_json TEXT NOT NULL DEFAULT '{}', PRIMARY KEY (tenant_id, order_id))",
+    "CREATE TABLE IF NOT EXISTS support_orders (tenant_id TEXT NOT NULL, order_id TEXT NOT NULL, customer_id TEXT NOT NULL, product TEXT NOT NULL, status TEXT NOT NULL, delivered_at TEXT, payment_status TEXT NOT NULL, shipping_address_json TEXT NOT NULL DEFAULT '{}', source_type TEXT NOT NULL DEFAULT 'unknown', source_id TEXT, writer_id TEXT, source_updated_at TEXT, verified_at TEXT, conflict_status TEXT NOT NULL DEFAULT 'unknown', PRIMARY KEY (tenant_id, order_id))",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'unknown'",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS source_id TEXT",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS writer_id TEXT",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS source_updated_at TEXT",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS verified_at TEXT",
+    "ALTER TABLE support_orders ADD COLUMN IF NOT EXISTS conflict_status TEXT NOT NULL DEFAULT 'unknown'",
     "CREATE TABLE IF NOT EXISTS support_policies (tenant_id TEXT NOT NULL, document_id TEXT NOT NULL, version TEXT NOT NULL, effective_from TEXT NOT NULL, policy_json TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (tenant_id, document_id, version))",
     "CREATE TABLE IF NOT EXISTS support_memories (tenant_id TEXT NOT NULL, memory_id TEXT NOT NULL, version_id TEXT NOT NULL, owner_id TEXT NOT NULL, kind TEXT NOT NULL, value_json TEXT NOT NULL, source_type TEXT NOT NULL, source_id TEXT, valid_from TEXT, valid_until TEXT, supersedes_version_id TEXT, trust_level TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (tenant_id, version_id))",
     "CREATE TABLE IF NOT EXISTS support_actions (tenant_id TEXT NOT NULL, action_id TEXT NOT NULL, idempotency_key TEXT NOT NULL, action_type TEXT NOT NULL, order_id TEXT NOT NULL, payload_json TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (tenant_id, action_id), UNIQUE (tenant_id, idempotency_key))",

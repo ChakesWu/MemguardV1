@@ -17,12 +17,17 @@ from memguard.config import LLMConfig, create_llm_client, llm_chat, check_config
 from memguard.governance import (
     GovernanceContext,
     GovernancePolicy,
+    HandoverEngine,
+    HandoverMemory,
+    HandoverOutcome,
     MemoryEvidence,
+    MemoryOwner,
     MemoryGovernanceEngine,
     OutputCitation,
     OutputEvidenceResult,
     OutputEvidenceRole,
     PolicyAction,
+    TransferPolicy,
 )
 
 __version__ = "0.1.0"
@@ -36,12 +41,17 @@ __all__ = [
     # Memory governance
     "GovernanceContext",
     "GovernancePolicy",
+    "HandoverEngine",
+    "HandoverMemory",
+    "HandoverOutcome",
     "MemoryEvidence",
+    "MemoryOwner",
     "MemoryGovernanceEngine",
     "OutputCitation",
     "OutputEvidenceResult",
     "OutputEvidenceRole",
     "PolicyAction",
+    "TransferPolicy",
     # LLM config
     "LLMConfig",
     "create_llm_client",

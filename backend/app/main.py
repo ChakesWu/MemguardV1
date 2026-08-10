@@ -17,6 +17,7 @@ from .services import MemoryGateway
 from .audit import AuditReportGenerator, export_to_markdown
 from .auth import AuthenticationError, TenantAccessError, authenticate_bearer_token, enforce_tenant
 from .agent_proxy import router as agent_proxy_router
+from .enterprise_handover_demo import build_enterprise_handover_demo
 
 app = FastAPI(title="MemGuard v1", version="0.1.0")
 app.include_router(agent_proxy_router)
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 gateway = MemoryGateway()
+app.state.gateway = gateway
 agent = MemoryAwareAgent(gateway=gateway, llm=LLMClient())
 audit_generator = AuditReportGenerator()
 
@@ -59,6 +61,12 @@ def health():
     return {"status": "ok", "llm_model": agent.llm.model, "llm_base_url": agent.llm.base_url}
 
 
+@app.get("/v1/demo/enterprise-handover")
+def enterprise_handover_demo(request: Request):
+    """Show a policy-evaluated enterprise memory handover for the signed-in tenant."""
+    return build_enterprise_handover_demo(request_tenant(request))
+
+
 @app.post("/v1/memory/write")
 def write_memory(payload: MemoryWriteRequest, request: Request):
     tenant_id = request_tenant(request, payload.tenant_id)
@@ -75,6 +83,11 @@ def query_memory(payload: MemoryQueryRequest, request: Request):
 def timeline(payload: TimelineQueryRequest, request: Request):
     tenant_id = request_tenant(request, payload.tenant_id)
     return gateway.timeline(payload.model_copy(update={"tenant_id": tenant_id}))
+
+
+@app.get("/v1/memory/inventory")
+def governed_memory_inventory(request: Request):
+    return {"items": gateway.governed_memory_inventory(request_tenant(request))}
 
 
 @app.post("/v1/agent/run")

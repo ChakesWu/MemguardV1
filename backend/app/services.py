@@ -12,6 +12,14 @@ from uuid import uuid4
 from .schemas import MemoryQueryRequest, MemoryWriteRequest, TimelineQueryRequest
 from .database import DatabaseConfig
 from .migrations import apply_migrations
+from memguard.governance import (
+    ConflictStatus,
+    DataClassification,
+    GovernanceContext,
+    GovernancePolicy,
+    MemoryEvidence,
+    MemoryGovernanceEngine,
+)
 
 @dataclass
 class MemoryEvent:
@@ -724,6 +732,156 @@ class MemoryGateway:
                 return {"events": events, "total": total}
         except Exception as e:
             return {"events": [], "total": 0, "error": str(e)}
+
+    @staticmethod
+    def _inventory_governance(evidence: MemoryEvidence, evaluated_at: datetime) -> dict[str, Any]:
+        policy = GovernancePolicy(
+            policy_id="support-memory-inventory-v1",
+            source_scores={
+                "support_order_db": 92.0,
+                "support_policy_db": 95.0,
+                "support_agent_note": 65.0,
+                "agent_generated_summary": 50.0,
+            },
+            writer_scores={"support-order-sync": 88.0, "policy-administration": 95.0},
+            max_age_days={
+                "support_order_db": 30,
+                "support_policy_db": 365,
+                "support_agent_note": 180,
+                "agent_generated_summary": 90,
+            },
+        )
+        run = MemoryGovernanceEngine(policy).evaluate_and_build_prompt(
+            "Inspect governed support memory.",
+            (evidence,),
+            GovernanceContext(
+                tenant_id=evidence.tenant_id or "",
+                agent_id="evidence-console",
+                purpose="evidence_console",
+                evaluated_at=evaluated_at,
+            ),
+        )
+        evaluation = run.evaluations[0]
+        factors = evaluation.trust.factors
+        return {
+            "trust_score": evaluation.trust.score,
+            "trust_level": evaluation.trust.level.value,
+            "trust_factors": {
+                name: {"score": getattr(factors, name).score, "reason": getattr(factors, name).reason}
+                for name in ("source", "writer", "freshness", "conflict", "policy_fit")
+            },
+            "policy_status": evaluation.policy.action.value,
+            "policy_explanation": evaluation.policy.explanation,
+            "policy_reason_codes": list(evaluation.policy.reason_codes),
+            "prompt_eligible": evaluation.policy.action.value in {"allow", "warn"},
+        }
+
+    def governed_memory_inventory(self, tenant_id: str) -> list[dict[str, Any]]:
+        """Return real support records with deterministic governance, never synthetic scores."""
+        try:
+            with self.database.connect() as conn:
+                orders = conn.execute(
+                    "SELECT * FROM support_orders WHERE tenant_id = ? ORDER BY order_id", (tenant_id,)
+                ).fetchall()
+                policies = conn.execute(
+                    "SELECT * FROM support_policies WHERE tenant_id = ? ORDER BY document_id, version", (tenant_id,)
+                ).fetchall()
+                memories = conn.execute(
+                    "SELECT * FROM support_memories WHERE tenant_id = ? ORDER BY memory_id, version_id", (tenant_id,)
+                ).fetchall()
+        except Exception:
+            return []
+
+        evaluated_at = datetime.now(timezone.utc)
+        items: list[dict[str, Any]] = []
+        for row in orders:
+            data = dict(row)
+            delivered = data.get("delivered_at")
+            delivered_date = datetime.fromisoformat(delivered.replace("Z", "+00:00")).strftime("%B %-d, %Y") if delivered else "date unknown"
+            summary = f"Delivered {delivered_date} · Payment {data['payment_status']} · Customer {data['customer_id']}"
+            evidence = MemoryEvidence(
+                memory_id=f"order:{data['order_id']}", tenant_id=tenant_id,
+                content=f"{data['product']}. {summary}", source_type=data.get("source_type") or "support_order_db",
+                source_id=data.get("source_id") or data["order_id"], writer_id=data.get("writer_id"),
+                created_at=datetime.fromisoformat(delivered.replace("Z", "+00:00")) if delivered else None,
+                verified_at=datetime.fromisoformat(data["verified_at"].replace("Z", "+00:00")) if data.get("verified_at") else None,
+                conflict_status=ConflictStatus(data.get("conflict_status") or "unknown"),
+                data_classification=DataClassification.INTERNAL, allowed_purposes=("evidence_console",),
+            )
+            items.append({
+                "memory_id": evidence.memory_id, "kind": "support_order",
+                "display_name": f"{data['product']} order", "summary": summary,
+                "source_type": evidence.source_type, "source_id": evidence.source_id,
+                "writer_id": evidence.writer_id, "verified_at": data.get("verified_at"),
+                "updated_at": data.get("source_updated_at"), "conflict_status": evidence.conflict_status.value,
+                **self._inventory_governance(evidence, evaluated_at),
+            })
+
+        for row in policies:
+            data = dict(row)
+            values = json.loads(data["policy_json"])
+            if data["document_id"] == "refund-policy":
+                summary = (
+                    f"{values.get('standard_refund_days', 'Unknown')}-day standard refund window · "
+                    "Defective items outside the window require manual review"
+                )
+            else:
+                summary = json.dumps(values, ensure_ascii=False)
+            effective = datetime.fromisoformat(data["effective_from"].replace("Z", "+00:00"))
+            evidence = MemoryEvidence(
+                memory_id=f"policy:{data['document_id']}:{data['version']}", tenant_id=tenant_id,
+                content=summary, source_type="support_policy_db", source_id=data["document_id"],
+                writer_id="policy-administration", created_at=effective, verified_at=effective,
+                conflict_status=ConflictStatus.NONE, data_classification=DataClassification.INTERNAL,
+                allowed_purposes=("evidence_console",),
+            )
+            governance = self._inventory_governance(evidence, evaluated_at)
+            if data["status"] != "active":
+                governance.update({
+                    "policy_status": "review_required", "policy_explanation": "This policy version is not active.",
+                    "policy_reason_codes": ["lifecycle:not_active"], "prompt_eligible": False,
+                })
+            items.append({
+                "memory_id": evidence.memory_id, "kind": "policy_document",
+                "display_name": f"Refund policy {data['version']}", "summary": summary,
+                "source_type": evidence.source_type, "source_id": evidence.source_id,
+                "writer_id": evidence.writer_id, "verified_at": data["effective_from"],
+                "updated_at": data["effective_from"], "conflict_status": "none", **governance,
+            })
+
+        for row in memories:
+            data = dict(row)
+            value = json.loads(data["value_json"])
+            valid_from = datetime.fromisoformat(data["valid_from"].replace("Z", "+00:00")) if data.get("valid_from") else None
+            valid_until = datetime.fromisoformat(data["valid_until"].replace("Z", "+00:00")) if data.get("valid_until") else None
+            if data["kind"] == "refund_exception" and isinstance(value, dict):
+                summary = f"One future order received a {value.get('refund_window_days')}-day refund exception"
+                if valid_until:
+                    summary += f" · Expired {valid_until.strftime('%B %-d, %Y')}"
+                display_name = "One-time customer refund exception"
+            else:
+                summary = f"Agent summary: {value}" if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+                display_name = data["kind"].replace("_", " ").title()
+            evidence = MemoryEvidence(
+                memory_id=data["memory_id"], tenant_id=tenant_id, content=summary,
+                source_type=data["source_type"], source_id=data.get("source_id"), writer_id=None,
+                created_at=valid_from, verified_at=valid_from, valid_until=valid_until,
+                conflict_status=ConflictStatus.NONE, data_classification=DataClassification.INTERNAL,
+                allowed_purposes=("evidence_console",),
+            )
+            governance = self._inventory_governance(evidence, evaluated_at)
+            if data["status"] != "active":
+                governance.update({
+                    "policy_status": "block", "policy_explanation": "This memory is expired or no longer active.",
+                    "policy_reason_codes": ["lifecycle:expired"], "prompt_eligible": False,
+                })
+            items.append({
+                "memory_id": evidence.memory_id, "kind": data["kind"], "display_name": display_name,
+                "summary": summary, "source_type": data["source_type"], "source_id": data.get("source_id"),
+                "writer_id": None, "verified_at": data.get("valid_from"), "updated_at": data.get("valid_from"),
+                "conflict_status": "none", **governance,
+            })
+        return items
 
     def get_sessions_list(self, limit: int = 50, tenant_id: str | None = None) -> dict[str, Any]:
         """Return distinct sessions with their event counts and latest timestamps."""

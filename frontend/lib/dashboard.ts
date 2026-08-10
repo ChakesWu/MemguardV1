@@ -33,6 +33,26 @@ export interface Stats {
   db_path?: string
 }
 
+export interface GovernedMemory {
+  memory_id: string
+  kind: string
+  display_name: string
+  summary: string
+  source_type: string
+  source_id?: string
+  writer_id?: string
+  verified_at?: string
+  updated_at?: string
+  conflict_status: string
+  trust_score: number | null
+  trust_level: string
+  trust_factors: Record<string, { score: number | null; reason: string }>
+  policy_status: string
+  policy_explanation: string
+  policy_reason_codes?: string[]
+  prompt_eligible: boolean
+}
+
 export interface EvidenceItem {
   event_id: string
   side?: 'input' | 'output'
@@ -110,4 +130,57 @@ export function memoryKeyPresentation(key: string): MemoryKeyPresentation {
 
 export function traceOutput(trace: DecisionTrace): string {
   return trace.llm_output || trace.output_summary || trace.user_input || 'No output recorded'
+}
+
+export type MemoryUsage = 'used' | 'constrained' | 'rejected' | 'available'
+
+export interface HumanEvidenceStory {
+  memoryTitle: string
+  memorySummary: string
+  supportsClaim: string | null
+  evidenceQuote: string | null
+  roleDescription: string
+  whyAllowed: string
+}
+
+export function memoryUsage(memory: GovernedMemory, trace: DecisionTrace | null): MemoryUsage {
+  if (trace) {
+    const considered = Array.isArray(trace.metadata?.considered_memories)
+      ? trace.metadata?.considered_memories as Array<Record<string, unknown>>
+      : []
+    const recorded = considered.find(item => item.memory_id === memory.memory_id)
+    if (recorded && ['used', 'constrained', 'rejected', 'available'].includes(String(recorded.usage))) {
+      return recorded.usage as MemoryUsage
+    }
+    if ((trace.input_memory_ids || []).includes(memory.memory_id)) return 'used'
+  }
+  if (!memory.prompt_eligible || ['block', 'quarantine', 'review_required'].includes(memory.policy_status)) return 'rejected'
+  return 'available'
+}
+
+export function evidenceStory(item: EvidenceItem, memory?: GovernedMemory): HumanEvidenceStory {
+  const metadata = item.metadata || {}
+  const role = String(metadata.evidence_role || '')
+  const roleDescription = {
+    factual_support: 'Establishes a fact stated in the answer.',
+    constraint: 'Limits what the agent may say or do.',
+    preference: 'Applies a recorded customer or business preference.',
+    background_context: 'Provides relevant context without proving the claim by itself.',
+  }[role] || 'Recorded as governed context for this answer.'
+  const factors = memory?.trust_factors || metadata.trust_factors || {}
+  const sourceReason = factors.source?.reason
+  const writerReason = factors.writer?.reason
+  const freshnessReason = factors.freshness?.reason
+  const conflictReason = factors.conflict?.reason
+  const reasons = [sourceReason, writerReason, freshnessReason, conflictReason].filter(Boolean)
+  return {
+    memoryTitle: memory?.display_name || memoryKeyPresentation(item.memory_key).label || item.memory_key,
+    memorySummary: memory?.summary || String(item.metadata?.memory_summary || 'The raw memory summary was not captured for this older event.'),
+    supportsClaim: typeof metadata.output_segment === 'string' ? metadata.output_segment : null,
+    evidenceQuote: typeof metadata.evidence_quote === 'string' ? metadata.evidence_quote : null,
+    roleDescription,
+    whyAllowed: reasons.length
+      ? reasons.join(' · ')
+      : memory?.policy_explanation || String(metadata.policy_explanation || 'Governance explanation was not captured for this older event.'),
+  }
 }

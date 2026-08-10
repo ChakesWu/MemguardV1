@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import AuditReport from '../components/AuditReport'
 import ConflictWarning from '../components/ConflictWarning'
 import EvidenceWorkspace from '../components/EvidenceWorkspace'
+import MemoryInventory from '../components/MemoryInventory'
 import MemoryDiffViewer from '../components/MemoryDiffViewer'
 import OutputNavigator from '../components/OutputNavigator'
 import { currentTenantId, loginRequired, logout } from '../lib/auth'
-import { Conflict, DecisionTrace, MemoryEvent, Stats } from '../lib/dashboard'
+import { Conflict, DecisionTrace, GovernedMemory, MemoryEvent, Stats } from '../lib/dashboard'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const OPERATIONS = ['all', 'create', 'read', 'update', 'delete', 'query']
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<MemoryEvent[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [traces, setTraces] = useState<DecisionTrace[]>([])
+  const [inventory, setInventory] = useState<GovernedMemory[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<MemoryEvent | null>(null)
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null)
@@ -61,6 +63,15 @@ export default function DashboardPage() {
       const eventsRes = await apiFetch(`${API_BASE}/v1/events?${params.toString()}`)
       const eventsData = await eventsRes.json()
       setEvents(eventsData.events || [])
+
+      try {
+        const inventoryRes = await apiFetch(`${API_BASE}/v1/memory/inventory`)
+        if (!inventoryRes.ok) throw new Error(`Inventory request failed with ${inventoryRes.status}`)
+        const inventoryData = await inventoryRes.json()
+        setInventory(inventoryData.items || [])
+      } catch (error) {
+        console.error('Failed to fetch governed memory inventory:', error)
+      }
 
       try {
         const traceNamespace = currentTenantId()
@@ -142,6 +153,7 @@ export default function DashboardPage() {
             {stats ? `Connected · ${stats.database_driver || stats.db_path || 'database'}` : 'Backend unavailable'}
           </span>
           <a className="mg-button" href="/agent">Support agent</a>
+          <a className="mg-button" href="/handover">Enterprise handover</a>
           {conflicts.length > 0 && (
             <button type="button" className="mg-button mg-button--warning" onClick={() => setShowConflicts(true)}>
               {conflicts.length} conflict{conflicts.length === 1 ? '' : 's'}
@@ -164,7 +176,8 @@ export default function DashboardPage() {
         />
 
         <div className="mg-main-column">
-          <EvidenceWorkspace trace={selectedTrace} />
+          <EvidenceWorkspace trace={selectedTrace} inventory={inventory} />
+          <MemoryInventory memories={inventory} trace={selectedTrace} />
 
           <section className="mg-events" aria-labelledby="mg-events-title">
             <header className="mg-events__header">

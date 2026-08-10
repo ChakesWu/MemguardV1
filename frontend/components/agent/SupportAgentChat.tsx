@@ -4,7 +4,9 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
 
 import { CUSTOMER_SUPPORT_ASSISTANT_ID, CUSTOMER_SUPPORT_STREAM_MODES, agentClientOptions } from '../../lib/agent-client'
-import { messageText, parseApprovalInterrupt } from '../../lib/agent-ui'
+import { OutputEvidenceLink, messageText, parseApprovalInterrupt, parseMessageOutputEvidence, shouldRenderChatMessage } from '../../lib/agent-ui'
+import EvidenceDetailPanel from './EvidenceDetailPanel'
+import OutputEvidence from './OutputEvidence'
 
 type SupportAgentChatProps = {
   accessToken: string
@@ -14,6 +16,7 @@ type SupportAgentChatProps = {
 export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgentChatProps) {
   const [draft, setDraft] = useState('')
   const [threadId, setThreadId] = useState<string | null>(null)
+  const [selectedEvidence, setSelectedEvidence] = useState<OutputEvidenceLink | null>(null)
   const stream = useStream({
     ...agentClientOptions(accessToken),
     assistantId: CUSTOMER_SUPPORT_ASSISTANT_ID,
@@ -52,6 +55,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
         </div>
         <div className="mg-topbar__actions">
           <a className="mg-button" href="/">Evidence console</a>
+          <a className="mg-button" href="/handover">Enterprise handover</a>
           <button type="button" className="mg-button" onClick={() => { stream.switchThread(null); setThreadId(null) }}>New conversation</button>
           <button type="button" className="mg-button mg-button--primary" onClick={onSignOut}>Sign out</button>
         </div>
@@ -88,13 +92,15 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
               </div>
             )}
             {stream.messages.map((message, index) => {
+              if (!shouldRenderChatMessage(message)) return null
               const content = messageText(message.content)
               if (!content) return null
               const isUser = message.type === 'human'
+              const evidenceLinks = isUser ? [] : parseMessageOutputEvidence(content, message)
               return (
                 <article key={message.id || index} className={`mg-agent-message ${isUser ? 'mg-agent-message--user' : 'mg-agent-message--assistant'}`}>
                   <span className="mg-agent-message__label">{isUser ? 'You' : 'Support agent'}</span>
-                  <p>{content}</p>
+                  {isUser ? <p>{content}</p> : <OutputEvidence answer={content} links={evidenceLinks} onOpenEvidence={setSelectedEvidence} />}
                 </article>
               )
             })}
@@ -124,6 +130,7 @@ export default function SupportAgentChat({ accessToken, onSignOut }: SupportAgen
           </form>
         </section>
       </section>
+      {selectedEvidence && <EvidenceDetailPanel link={selectedEvidence} onClose={() => setSelectedEvidence(null)} />}
     </main>
   )
 }
