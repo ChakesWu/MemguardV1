@@ -97,8 +97,13 @@ def _evidence_for_ids(repository: SupportRepository, tenant_id: str, memory_ids:
 
 
 def _find_unique_segment(answer: str, segment: str) -> tuple[int, int] | None:
-    start = answer.find(segment)
-    if start < 0 or answer.find(segment, start + 1) >= 0:
+    # Agent phrasing/capitalization is non-deterministic.  We link the exact
+    # original answer span after a case-insensitive match so validation still
+    # receives an unmodified claim-level segment.
+    normalized_answer = answer.casefold()
+    normalized_segment = segment.casefold()
+    start = normalized_answer.find(normalized_segment)
+    if start < 0 or normalized_answer.find(normalized_segment, start + 1) >= 0:
         return None
     return start, start + len(segment)
 
@@ -144,11 +149,16 @@ def _infer_refund_policy_citations(
         evidence = _policy_evidence(repository, tenant_id, memory_id)
         if evidence is None or not memory_id.startswith("policy:refund-policy:"):
             continue
-        for segment in ("requires manual review", "require manual review"):
+        for segment in (
+            "requires manual review",
+            "require manual review",
+            "manual review required",
+            "manually review your claim",
+        ):
             offsets = _find_unique_segment(answer, segment)
             if offsets is not None:
                 start, end = offsets
-                citations.append(ExplicitCitation(start, end, segment, memory_id, "defective items outside the window require manual review", "constraint"))
+                citations.append(ExplicitCitation(start, end, answer[start:end], memory_id, "defective items outside the window require manual review", "constraint"))
                 break
     return tuple(citations)
 
