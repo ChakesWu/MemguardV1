@@ -47,6 +47,15 @@ def test_governed_output_records_preserve_the_human_evidence_story() -> None:
                 "policy": {"action": "block", "reason_codes": ["lifecycle:expired"], "explanation": "The exception expired."},
                 "influence": {"score": 0, "included_in_prompt": False},
             },
+            {
+                "memory_id": "policy:refund-policy:v2",
+                "content": "14-day standard refund window; defective items outside the window require manual review.",
+                "content_hash": "policy-hash",
+                "source": {"type": "support_policy_db", "id": "refund-policy", "writer_id": "policy-administration"},
+                "trust": {"score": 96, "level": "high", "factors": {}},
+                "policy": {"action": "allow", "reason_codes": ["trust:high"], "explanation": "Active refund policy."},
+                "influence": {"score": 0.7, "included_in_prompt": True},
+            },
         ],
         "output_evidence": {
             "valid_links": [
@@ -60,6 +69,17 @@ def test_governed_output_records_preserve_the_human_evidence_story() -> None:
                     "trust": {"score": 94.67, "level": "high"},
                     "policy": {"action": "allow"},
                     "influence": {"score": 0.8},
+                },
+                {
+                    "memory_id": "policy:refund-policy:v2",
+                    "segment": "requires manual review",
+                    "evidence_quote": "defective items outside the window require manual review",
+                    "role": "constraint",
+                    "prompt_included": True,
+                    "validation_status": "valid",
+                    "trust": {"score": 96, "level": "high"},
+                    "policy": {"action": "allow"},
+                    "influence": {"score": 0.7},
                 }
             ]
         },
@@ -70,7 +90,7 @@ def test_governed_output_records_preserve_the_human_evidence_story() -> None:
         agent_id="customer_support_agent",
         session_id="thread-1",
         user_input="Can I get a refund?",
-        answer="Your order was delivered and paid.",
+        answer="Your order was delivered and paid. Your claim requires manual review.",
         report=report,
     )
 
@@ -81,6 +101,7 @@ def test_governed_output_records_preserve_the_human_evidence_story() -> None:
     assert events[0].metadata["trust_factors"]["conflict"]["score"] == 100
     considered = trace.metadata["considered_memories"]
     assert next(item for item in considered if item["memory_id"] == "order:ORD-4821")["usage"] == "used"
+    assert next(item for item in considered if item["memory_id"] == "policy:refund-policy:v2")["usage"] == "constrained"
     assert next(item for item in considered if item["memory_id"] == "MEM-EXCEPTION-77")["usage"] == "rejected"
 
 

@@ -106,6 +106,12 @@ def build_support_tools(repository: SupportRepository):
             },
             status=status,
         )
-        return {"status": action.status, "action_id": action.action_id, "order_id": order_id, "reason": decision.reason}
+        return {
+            "status": action.status,
+            "action_id": action.action_id,
+            "order_id": order_id,
+            "reason": decision.reason,
+            "memguard_memory_ids": [f"order:{order.order_id}", f"policy:{policy.document_id}:{policy.version}"],
+        }
 
     return (get_order, request_refund)

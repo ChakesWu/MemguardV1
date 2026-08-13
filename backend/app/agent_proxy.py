@@ -40,10 +40,10 @@ def extract_sse_payloads(buffer: bytes, chunk: bytes) -> tuple[bytes, list[dict[
     return buffer, payloads
 
 
-def _usage_for_item(item: dict[str, Any], used_memory_ids: set[str]) -> str:
+def _usage_for_item(item: dict[str, Any], linked_memory_usage: dict[str, str]) -> str:
     memory_id = item.get("memory_id")
-    if memory_id in used_memory_ids:
-        return "used"
+    if isinstance(memory_id, str) and memory_id in linked_memory_usage:
+        return linked_memory_usage[memory_id]
     policy = item.get("policy") if isinstance(item.get("policy"), dict) else {}
     influence = item.get("influence") if isinstance(item.get("influence"), dict) else {}
     if policy.get("action") in {"block", "quarantine", "review_required"} or influence.get("included_in_prompt") is False:
@@ -59,7 +59,11 @@ def governed_output_records(
     items = {item.get("memory_id"): item for item in report.get("items", []) if isinstance(item, dict)}
     links = report.get("output_evidence", {}).get("valid_links", [])
     valid_links = [link for link in links if isinstance(link, dict) and link.get("prompt_included") is True]
-    used_memory_ids = {str(link.get("memory_id")) for link in valid_links if link.get("memory_id")}
+    linked_memory_usage = {
+        str(link["memory_id"]): "constrained" if link.get("role") == "constraint" else "used"
+        for link in valid_links
+        if link.get("memory_id")
+    }
     trace_id = str(uuid4())
     events: list[MemoryEvent] = []
     scores: dict[str, float] = {}
@@ -107,7 +111,7 @@ def governed_output_records(
             "source": source,
             "trust": item.get("trust"),
             "policy": item.get("policy"),
-            "usage": _usage_for_item(item, used_memory_ids),
+            "usage": _usage_for_item(item, linked_memory_usage),
         })
 
     trace = DecisionTrace(

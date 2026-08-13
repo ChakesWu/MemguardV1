@@ -22,9 +22,9 @@ from .repository import SupportRepository
 
 _POLICY = GovernancePolicy(
     policy_id="customer-support-governance-v1",
-    source_scores={"support_order_db": 92},
-    writer_scores={"support-order-sync": 88},
-    max_age_days={"support_order_db": 30},
+    source_scores={"support_order_db": 92, "support_policy_db": 95},
+    writer_scores={"support-order-sync": 88, "policy-administration": 95},
+    max_age_days={"support_order_db": 30, "support_policy_db": 365},
     allow_threshold=80,
     warn_threshold=60,
     review_threshold=40,
@@ -56,10 +56,41 @@ def _order_evidence(repository: SupportRepository, tenant_id: str, memory_id: st
     )
 
 
+def _policy_evidence(repository: SupportRepository, tenant_id: str, memory_id: str) -> MemoryEvidence | None:
+    prefix = "policy:"
+    if not memory_id.startswith(prefix):
+        return None
+    _, document_id, version = memory_id.split(":", 2)
+    policy = repository.get_active_policy(tenant_id, document_id)
+    if policy is None or policy.version != version:
+        return None
+    if document_id == "refund-policy":
+        content = (
+            f"Refund policy {policy.version}: {policy.policy.get('standard_refund_days', 'Unknown')}-day standard refund window; "
+            "defective items outside the window require manual review."
+        )
+    else:
+        content = f"Policy {document_id} {policy.version}."
+    return MemoryEvidence(
+        memory_id=memory_id,
+        tenant_id=tenant_id,
+        content=content,
+        source_type="support_policy_db",
+        source_id=document_id,
+        writer_id="policy-administration",
+        created_at=policy.effective_from,
+        verified_at=policy.effective_from,
+        conflict_status=ConflictStatus.NONE,
+        data_classification=DataClassification.INTERNAL,
+        allowed_purposes=("customer_support",),
+        retrieval=RetrievalSignals(retrieved=True, included_in_prompt=True),
+    )
+
+
 def _evidence_for_ids(repository: SupportRepository, tenant_id: str, memory_ids: Iterable[str]) -> tuple[MemoryEvidence, ...]:
     evidence = []
     for memory_id in memory_ids:
-        item = _order_evidence(repository, tenant_id, memory_id)
+        item = _order_evidence(repository, tenant_id, memory_id) or _policy_evidence(repository, tenant_id, memory_id)
         if item is not None:
             evidence.append(item)
     return tuple(evidence)
@@ -99,6 +130,26 @@ def _infer_support_order_citations(
                 continue
             citations.append(ExplicitCitation(start, end, segment, memory_id, segment, "factual_support"))
             occupied.append((start, end))
+    return tuple(citations)
+
+
+def _infer_refund_policy_citations(
+    repository: SupportRepository,
+    tenant_id: str,
+    answer: str,
+    prompt_memory_ids: set[str],
+) -> tuple[ExplicitCitation, ...]:
+    citations = []
+    for memory_id in sorted(prompt_memory_ids):
+        evidence = _policy_evidence(repository, tenant_id, memory_id)
+        if evidence is None or not memory_id.startswith("policy:refund-policy:"):
+            continue
+        for segment in ("requires manual review", "require manual review"):
+            offsets = _find_unique_segment(answer, segment)
+            if offsets is not None:
+                start, end = offsets
+                citations.append(ExplicitCitation(start, end, segment, memory_id, "defective items outside the window require manual review", "constraint"))
+                break
     return tuple(citations)
 
 
@@ -147,7 +198,7 @@ def govern_output_content(
     """Strip private citations and return governed links for explicit or deterministic support facts."""
     answer, citations = extract_explicit_citations(content)
     if not citations:
-        citations = _infer_support_order_citations(repository, tenant_id, answer, prompt_memory_ids)
+        citations = _infer_support_order_citations(repository, tenant_id, answer, prompt_memory_ids) + _infer_refund_policy_citations(repository, tenant_id, answer, prompt_memory_ids)
     if not citations:
         return answer, None
     return answer, build_output_evidence_report(
