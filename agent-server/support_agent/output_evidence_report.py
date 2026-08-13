@@ -197,8 +197,15 @@ def govern_output_content(
 ) -> tuple[str, dict | None]:
     """Strip private citations and return governed links for explicit or deterministic support facts."""
     answer, citations = extract_explicit_citations(content)
-    if not citations:
-        citations = _infer_support_order_citations(repository, tenant_id, answer, prompt_memory_ids) + _infer_refund_policy_citations(repository, tenant_id, answer, prompt_memory_ids)
+    # Models may cite a factual record while omitting the governing policy from
+    # the private citation block.  Keep trustworthy explicit citations, then
+    # deterministically add support citations for prompt memories that are not
+    # already represented.  Otherwise an answer such as "ORD-4821 ... requires
+    # manual review" incorrectly renders the refund policy as merely available.
+    cited_memory_ids = {citation.memory_id for citation in citations}
+    inferred = _infer_support_order_citations(repository, tenant_id, answer, prompt_memory_ids)
+    inferred += _infer_refund_policy_citations(repository, tenant_id, answer, prompt_memory_ids)
+    citations += tuple(citation for citation in inferred if citation.memory_id not in cited_memory_ids)
     if not citations:
         return answer, None
     return answer, build_output_evidence_report(

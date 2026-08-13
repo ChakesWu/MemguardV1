@@ -31,3 +31,31 @@ def test_refund_policy_is_linked_as_a_constraint_when_it_requires_manual_review(
     )
     assert policy_link["role"] == "constraint"
     assert policy_link["segment"] == "requires manual review"
+
+
+def test_refund_policy_constraint_is_added_when_answer_already_cites_the_order(tmp_path) -> None:
+    """A factual order citation must not suppress the policy constraint link."""
+    from support_agent.output_evidence_report import govern_output_content
+    from support_agent.repository import SupportRepository
+    from support_agent.seed import seed_baseline_data
+
+    repository = SupportRepository(f"sqlite:///{tmp_path / 'support.db'}")
+    repository.migrate()
+    seed_baseline_data(repository)
+
+    answer, report = govern_output_content(
+        repository=repository,
+        tenant_id="acme-dev",
+        content=(
+            "Order ORD-4821 was delivered. Your defective-item claim requires manual review."
+            '<memguard-evidence>{"citations":[{"segment":"ORD-4821","memory_id":"order:ORD-4821",'
+            '"evidence_quote":"ORD-4821","role":"factual_support"}]}</memguard-evidence>'
+        ),
+        prompt_memory_ids={"order:ORD-4821", "policy:refund-policy:v2"},
+    )
+
+    assert answer.endswith("requires manual review.")
+    assert report is not None
+    links = report["output_evidence"]["valid_links"]
+    assert {link["memory_id"] for link in links} == {"order:ORD-4821", "policy:refund-policy:v2"}
+    assert next(link for link in links if link["memory_id"] == "policy:refund-policy:v2")["role"] == "constraint"
